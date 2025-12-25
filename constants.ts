@@ -28,5 +28,5 @@ export const JUICE = {
 
 export const TASKS = {
   TOTAL: 5,
-  SPEED_PENALTY: 0.15,
+  SPEED_PENALTY: 0.12, // Cumulative penalty per burden carried
 };
