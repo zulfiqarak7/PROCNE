@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Game } from './Game';
 import { UI } from './components/UI';
 import { GameState } from './types';
@@ -11,6 +11,7 @@ function App() {
   const [tasksCompleted, setTasksCompleted] = useState(0);
   const [currentZoneName, setCurrentZoneName] = useState("The Barren Sands");
   const [dialogue, setDialogue] = useState<string | null>(null);
+  const [isEndingTransition, setIsEndingTransition] = useState(false);
 
   const handleStart = () => {
     setGameState(GameState.PLAYING);
@@ -29,15 +30,17 @@ function App() {
   }, []);
 
   const handleFinishLevel = useCallback(() => {
-    // If we just finished Ep 4, go to Global Finish
+    // If we just finished Ep 4, trigger fade to white
     if (currentEpisode === 4) {
-      setGameState(GameState.FINISHED);
+      setIsEndingTransition(true);
+      setTimeout(() => {
+        setGameState(GameState.FINISHED);
+      }, 3000);
     } else {
-      // Otherwise, advance episode and reset player state via Game component re-mount
+      // Otherwise, advance episode
       setCurrentEpisode(prev => prev + 1);
       setTasksCompleted(0);
       setDialogue(null);
-      // We stay in PLAYING state, the Game component will handle the level init based on prop change
     }
   }, [currentEpisode]);
 
@@ -50,6 +53,11 @@ function App() {
       {/* Scanlines Effect */}
       <div className="scanlines"></div>
       <div className="vignette"></div>
+
+      {/* Fade to White Overlay */}
+      <div 
+        className={`absolute inset-0 z-[60] bg-white transition-opacity duration-[3000ms] pointer-events-none ${isEndingTransition ? 'opacity-100' : 'opacity-0'}`}
+      />
 
       {gameState !== GameState.FINISHED && (
         <Game 

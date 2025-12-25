@@ -1,3 +1,4 @@
+
 export enum GameState {
   INTRO = 'INTRO',
   PLAYING = 'PLAYING',
@@ -57,6 +58,7 @@ export interface PlayerState {
   facingRight: boolean;
   isSlashing: boolean;
   isInteracting: boolean; // True if key is currently held
+  isShielding: boolean;   // New superpower for Episode 4
   interactionPressed: boolean; // True only on the frame the key was pressed
   draggingItem: string | null; 
   carriedItem: string | null;  
