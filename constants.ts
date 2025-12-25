@@ -21,7 +21,12 @@ export const WORLD = {
   VIEWPORT_WIDTH: 800,
 };
 
+export const JUICE = {
+  SHAKE_DECAY: 0.9,
+  HIT_STOP_DURATION: 0.08,
+};
+
 export const TASKS = {
   TOTAL: 5,
-  SPEED_PENALTY: 0.15, // 15% speed reduction per task
+  SPEED_PENALTY: 0.15,
 };
