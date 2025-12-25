@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Game } from './Game';
 import { UI } from './components/UI';
@@ -40,8 +41,12 @@ function App() {
     }
   }, [currentEpisode]);
 
+  const currentBg = gameState === GameState.INTRO ? COLORS.EPISODE_1.bg : 
+                    gameState === GameState.FINISHED ? '#000' :
+                    [COLORS.EPISODE_1.bg, COLORS.EPISODE_2.bg, COLORS.EPISODE_3.bg, COLORS.EPISODE_4.bg][currentEpisode - 1];
+
   return (
-    <div className="relative w-full h-screen overflow-hidden select-none" style={{ backgroundColor: COLORS.BLUE }}>
+    <div className="relative w-full h-screen overflow-hidden select-none" style={{ backgroundColor: currentBg }}>
       {/* Scanlines Effect */}
       <div className="scanlines"></div>
       <div className="vignette"></div>

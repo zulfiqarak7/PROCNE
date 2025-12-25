@@ -462,11 +462,14 @@ export const Game: React.FC<GameProps> = ({
     const stretch = 1 / squash;
     const burdenAlpha = Math.min(0.9, p.tasksCompleted * 0.25);
 
+    // Get current episode colors
+    const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
+
     ctx.save(); ctx.translate(p.pos.x + 20, p.pos.y + 80); if (!p.facingRight) ctx.scale(-1, 1);
     ctx.scale(stretch, squash);
     
-    // Core (White)
-    ctx.fillStyle = COLORS.WHITE; 
+    // Core Character
+    ctx.fillStyle = palette.player; 
     ctx.fillRect(-15, -80, 30, 45); // torso
     ctx.fillRect(-12, -98, 24, 24);  // head
     ctx.fillRect(-12, -35, 10, 35);  // leg L
@@ -492,8 +495,8 @@ export const Game: React.FC<GameProps> = ({
 
   const drawBoss = (ctx: CanvasRenderingContext2D, x: number, y: number, facingRight: boolean) => {
     ctx.save(); ctx.translate(x + 20, y + 80); if (!facingRight) ctx.scale(-1, 1);
-    // Dark silhouette
-    ctx.fillStyle = '#000'; ctx.beginPath(); 
+    // Silhouette (Bird Character Color)
+    ctx.fillStyle = COLORS.BOSS; ctx.beginPath(); 
     ctx.moveTo(-50, 0); ctx.lineTo(-25, -90); ctx.lineTo(20, -140); ctx.lineTo(70, -90); ctx.lineTo(40, 0); ctx.fill(); 
     // Eye
     ctx.fillStyle = COLORS.ORANGE; ctx.beginPath(); ctx.arc(20, -120, 10, 0, Math.PI*2); ctx.fill(); 
@@ -508,9 +511,9 @@ export const Game: React.FC<GameProps> = ({
     const ctx = canvas.getContext('2d')!;
     const s = stateRef.current;
     
-    // Clear Background
-    const bgColors = [COLORS.BLUE, '#1A2A5A', '#110606', COLORS.HONEY_YELLOW];
-    ctx.fillStyle = episode === 4 ? bgColors[3] : (episode === 3 ? bgColors[2] : bgColors[episode-1]);
+    // Clear Background with Episode Palette
+    const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
+    ctx.fillStyle = palette.bg;
     ctx.fillRect(0, 0, 800, 600);
 
     drawBackground(ctx);
