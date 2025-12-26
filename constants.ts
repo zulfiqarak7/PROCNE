@@ -10,7 +10,7 @@ export const COLORS = {
   EPISODE_1: { bg: '#9FAF90', player: '#34113F' },
   EPISODE_2: { bg: '#eff7cf', player: '#bad9b5' },
   EPISODE_3: { bg: '#564138', player: '#ff8811' },
-  EPISODE_4: { bg: '#5d2a42', player: '#225560' },
+  EPISODE_4: { bg: '#FFC30B', player: '#225560' },
   BOSS: '#b86f52'
 };
 

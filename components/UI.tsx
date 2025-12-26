@@ -29,11 +29,12 @@ export const UI: React.FC<UIProps> = ({ gameState, episode, tasksCompleted, curr
         
         {/* Background Atmospheric Elements */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {/* Distant Bird Head Silhouette */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] scale-[2] transform transition-transform duration-[10000ms] hover:scale-[2.1]">
-            <svg width="400" height="400" viewBox="0 0 100 100" fill={COLORS.EPISODE_1.player}>
-              <path d="M50 10 L80 40 L70 80 L30 80 L20 40 Z" />
-              <path d="M45 45 Q50 35 55 45" stroke={COLORS.ORANGE} fill="none" strokeWidth="2" />
+          {/* Distant Bird Silhouette */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06] transform transition-transform duration-[30000ms] hover:scale-110">
+            <svg width="600" height="600" viewBox="0 0 200 200" fill={COLORS.EPISODE_1.player}>
+               {/* Detailed Stylized Swallow Shape */}
+               <path d="M100 50 C 115 45, 130 55, 130 65 C 160 40, 190 10, 195 15 C 175 45, 150 70, 135 85 L 140 115 L 100 130 L 60 115 L 65 85 C 50 70, 25 45, 5 15 C 10 10, 40 40, 70 65 C 70 55, 85 45, 100 50 Z" />
+               <path d="M100 130 L 70 180 L 100 150 L 130 180 Z" />
             </svg>
           </div>
           

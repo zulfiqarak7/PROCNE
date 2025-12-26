@@ -31,7 +31,15 @@ export enum EntityType {
   OFFERING_BOWL = 'OFFERING_BOWL',
   COLLECTIBLE_BONE = 'COLLECTIBLE_BONE',
   BOSS = 'BOSS',
-  PROJECTILE = 'PROJECTILE'
+  PROJECTILE = 'PROJECTILE',
+  // Puzzle Items
+  ITEM_GEAR = 'ITEM_GEAR',
+  ITEM_KEY = 'ITEM_KEY',
+  ITEM_INGREDIENT = 'ITEM_INGREDIENT', // Salt, Sulfur, Mercury
+  ITEM_HEART = 'ITEM_HEART',
+  // Puzzle Machines
+  MACHINE_TURBINE = 'MACHINE_TURBINE',
+  ALCHEMY_CAULDRON = 'ALCHEMY_CAULDRON'
 }
 
 export interface Entity extends Box {
@@ -40,6 +48,13 @@ export interface Entity extends Box {
   interacted: boolean;
   visible: boolean;
   data?: any; 
+}
+
+export interface Hint {
+  x: number;
+  y: number;
+  text: string;
+  range: number;
 }
 
 export interface Particle {
@@ -62,6 +77,7 @@ export interface PlayerState {
   interactionPressed: boolean; // True only on the frame the key was pressed
   draggingItem: string | null; 
   carriedItem: string | null;  
+  carriedItemId: string | null; // ID of the specific entity instance
   tasksCompleted: number;
   items: string[];
   animTimer: number;
