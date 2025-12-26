@@ -39,7 +39,7 @@ export const Game: React.FC<GameProps> = ({
     bossInvuln: number;
     shake: number;
     hitStop: number;
-    weatherParticles: {x: number, y: number, v: number, size: number}[];
+    envParticles: {x: number, y: number, vx: number, vy: number, size: number, color: string}[];
     lastGrounded: boolean;
     bgLayers: {speed: number, h: number, color: string, objects: {x: number, y: number, w: number, h: number, type: 'rect' | 'arch' | 'pillar' | 'monolith', drift?: number}[]}[];
   }>({
@@ -73,11 +73,13 @@ export const Game: React.FC<GameProps> = ({
     bossInvuln: 0,
     shake: 0,
     hitStop: 0,
-    weatherParticles: Array.from({length: 120}, () => ({
+    envParticles: Array.from({length: 150}, () => ({
       x: Math.random() * WORLD.VIEWPORT_WIDTH,
       y: Math.random() * WORLD.HEIGHT,
-      v: 0.5 + Math.random() * 2,
-      size: 1 + Math.random() * 2
+      vx: 0,
+      vy: 0,
+      size: Math.random() * 2 + 1,
+      color: 'rgba(255,255,255,0.2)'
     })),
     lastGrounded: false,
     bgLayers: [
@@ -536,6 +538,69 @@ export const Game: React.FC<GameProps> = ({
     p.interactionPressed = false;
   };
 
+  const updateEnvironment = (dt: number) => {
+    const s = stateRef.current;
+    const w = WORLD.VIEWPORT_WIDTH;
+    const h = WORLD.HEIGHT;
+
+    // Episode specific logic
+    if (episode === 1) {
+        const intensity = 1 + (s.player.tasksCompleted * 0.5);
+        s.envParticles.forEach(p => {
+            p.vx = intensity * 2 * (p.size * 0.5);
+            p.vy = 0.5;
+            p.color = `rgba(200, 180, 140, ${0.3 + (s.player.tasksCompleted * 0.1)})`;
+        });
+    } else if (episode === 2) {
+        // Find wind tunnel
+        const wind = s.entities.find(e => e.type === EntityType.WIND_TUNNEL);
+        const isWindy = wind?.data.active ?? false;
+        
+        s.envParticles.forEach(p => {
+             // If windy, move fast left. If fixed (turbine fixed), calm drift.
+             const targetVx = isWindy ? -15 : -1;
+             p.vx += (targetVx - p.vx) * 0.05; // Smooth transition
+             p.vy = Math.sin(Date.now() * 0.005 + p.x) * 2;
+             p.color = isWindy ? 'rgba(200, 255, 200, 0.4)' : 'rgba(255, 255, 255, 0.2)';
+        });
+    } else if (episode === 3) {
+        // Find cauldron
+        const cauldron = s.entities.find(e => e.type === EntityType.ALCHEMY_CAULDRON);
+        const heat = cauldron ? cauldron.data.ingredients : 0;
+        
+        s.envParticles.forEach(p => {
+            p.vy = -1 - (heat * 1.5); // Rise faster with heat
+            p.vx = Math.sin(Date.now() * 0.002 + p.y * 0.05) * 0.5;
+            // Shift from grey to orange
+            if (heat >= 3) p.color = 'rgba(255, 69, 0, 0.6)'; // Red/Orange
+            else if (heat >= 1) p.color = 'rgba(255, 140, 0, 0.4)';
+            else p.color = 'rgba(100, 100, 100, 0.3)';
+        });
+    } else if (episode === 4) {
+        // Glitchy
+        s.envParticles.forEach(p => {
+            if (Math.random() < 0.05) {
+                p.x = Math.random() * w;
+                p.y = Math.random() * h;
+            }
+            p.vy = 5; // Rain
+            p.color = 'rgba(0, 255, 0, 0.2)';
+        });
+    }
+
+    // Move particles
+    s.envParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Wrap around
+        if (p.x > w) p.x = 0;
+        if (p.x < 0) p.x = w;
+        if (p.y > h) p.y = 0;
+        if (p.y < 0) p.y = h;
+    });
+  };
+
   const updatePhysics = (dt: number) => {
     const s = stateRef.current;
     const p = s.player;
@@ -573,6 +638,12 @@ export const Game: React.FC<GameProps> = ({
     
     const maxS = p.draggingItem || p.isShielding ? 2.5 : PHYSICS.MAX_SPEED;
     p.vel.x = Math.max(-maxS, Math.min(maxS, p.vel.x));
+    
+    // Movement Trail
+    const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
+    if (Math.abs(p.vel.x) > 4 && Math.random() < 0.3) {
+       spawnParticles(p.pos.x + 20, p.pos.y + 80, palette.player, 1);
+    }
     
     p.vel.y += PHYSICS.GRAVITY;
     p.pos.x += p.vel.x;
@@ -614,10 +685,8 @@ export const Game: React.FC<GameProps> = ({
       }
     });
 
-    ctx.fillStyle = episode === 3 ? 'rgba(255,120,0,0.2)' : 'rgba(255,255,255,0.18)';
-    s.weatherParticles.forEach(p => {
-      p.x -= p.v; p.y += Math.sin(Date.now()/2000 + p.x) * 0.4;
-      if (p.x < 0) p.x = w; if (p.y > h) p.y = 0;
+    s.envParticles.forEach(p => {
+      ctx.fillStyle = p.color;
       ctx.fillRect(p.x, p.y, p.size, p.size);
     });
   };
@@ -753,6 +822,13 @@ export const Game: React.FC<GameProps> = ({
     const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
     ctx.fillStyle = palette.bg; ctx.fillRect(0, 0, 800, 600);
     drawBackground(ctx);
+    
+    // Low Health Vignette
+    if (s.player.hp < 2) {
+        const pulse = (Math.sin(Date.now() / 200) + 1) * 0.1;
+        ctx.fillStyle = `rgba(255, 0, 0, ${pulse})`;
+        ctx.fillRect(0, 0, 800, 600);
+    }
     
     // Draw Camera Space Entities
     ctx.save();
@@ -898,6 +974,7 @@ export const Game: React.FC<GameProps> = ({
     for (let i = stateRef.current.particles.length - 1; i >= 0; i--) { const p = stateRef.current.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt; if (p.life <= 0) stateRef.current.particles.splice(i, 1); }
     if (gameState === GameState.PLAYING && dt > 0) {
       updatePhysics(dt); updateEntities(dt);
+      updateEnvironment(dt);
       if (episode === 4) updateBoss(dt);
       const tx = episode === 4 ? 0 : stateRef.current.player.pos.x - 400;
       stateRef.current.camera.x += (tx - stateRef.current.camera.x) * 0.14;
