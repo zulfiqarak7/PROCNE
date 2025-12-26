@@ -39,6 +39,8 @@ export const Game: React.FC<GameProps> = ({
     bossInvuln: number;
     shake: number;
     hitStop: number;
+    windGustTimer: number;
+    isGusting: boolean;
     envParticles: {x: number, y: number, vx: number, vy: number, size: number, color: string}[];
     lastGrounded: boolean;
     bgLayers: {speed: number, h: number, color: string, objects: {x: number, y: number, w: number, h: number, type: 'rect' | 'arch' | 'pillar' | 'monolith', drift?: number}[]}[];
@@ -58,6 +60,7 @@ export const Game: React.FC<GameProps> = ({
       tasksCompleted: 0,
       items: [],
       animTimer: 0,
+      idleTime: 0,
       hp: 3,
       maxHp: 3
     },
@@ -73,6 +76,8 @@ export const Game: React.FC<GameProps> = ({
     bossInvuln: 0,
     shake: 0,
     hitStop: 0,
+    windGustTimer: 0,
+    isGusting: false,
     envParticles: Array.from({length: 150}, () => ({
       x: Math.random() * WORLD.VIEWPORT_WIDTH,
       y: Math.random() * WORLD.HEIGHT,
@@ -190,6 +195,8 @@ export const Game: React.FC<GameProps> = ({
     s.particles = [];
     s.hints = [];
     s.player.hp = 3;
+    s.windGustTimer = 0;
+    s.isGusting = false;
     
     const entities: Entity[] = [];
     
@@ -208,6 +215,11 @@ export const Game: React.FC<GameProps> = ({
       // Entities
       entities.push({ id: 'm1', type: EntityType.MOUND, x: 1500, y: WORLD.GROUND_Y - 60, w: 80, h: 60, interacted: false, visible: true, data: { hits: 0 } });
       entities.push({ id: 'm2', type: EntityType.MOUND, x: 2800, y: WORLD.GROUND_Y - 70, w: 80, h: 70, interacted: false, visible: true, data: { hits: 0, hasRing: true } });
+      
+      // Hazards: Sand Traps
+      entities.push({ id: 'trap1', type: EntityType.SAND_TRAP, x: 2200, y: WORLD.GROUND_Y - 20, w: 200, h: 20, interacted: false, visible: true });
+      entities.push({ id: 'trap2', type: EntityType.SAND_TRAP, x: 5000, y: WORLD.GROUND_Y - 20, w: 300, h: 20, interacted: false, visible: true });
+
       entities.push({ id: 'p1', type: EntityType.PILLAR, x: 4000, y: WORLD.GROUND_Y - 220, w: 40, h: 220, interacted: false, visible: true, data: { tilt: -24 } });
       entities.push({ id: 'p2', type: EntityType.PILLAR, x: 4400, y: WORLD.GROUND_Y - 220, w: 40, h: 220, interacted: false, visible: true, data: { tilt: 24 } });
       entities.push({ id: 'stone', type: EntityType.DRAGGABLE_STONE, x: 5600, y: WORLD.GROUND_Y - 80, w: 80, h: 80, interacted: false, visible: true });
@@ -228,8 +240,6 @@ export const Game: React.FC<GameProps> = ({
       entities.push({ id: 'wind_force', type: EntityType.WIND_TUNNEL, x: 3000, y: WORLD.GROUND_Y - 400, w: 1500, h: 400, interacted: false, visible: true, data: { force: -2.5, active: true } });
       
       // Puzzle Item: Rusty Gear (Platforms lowered to be reachable with Jump Force -14 and Gravity 0.8)
-      // Max Jump Height ~122px.
-      // Ground: 500. P1: 390 (Diff 110). P2: 280 (Diff 110).
       entities.push({ id: 'platform_1', type: EntityType.PLATFORM, x: 1200, y: WORLD.GROUND_Y - 110, w: 200, h: 20, interacted: false, visible: true });
       entities.push({ id: 'platform_2', type: EntityType.PLATFORM, x: 900, y: WORLD.GROUND_Y - 220, w: 150, h: 20, interacted: false, visible: true });
       entities.push({ id: 'gear', type: EntityType.ITEM_GEAR, x: 950, y: WORLD.GROUND_Y - 260, w: 40, h: 40, interacted: false, visible: true });
@@ -252,6 +262,9 @@ export const Game: React.FC<GameProps> = ({
       s.hints.push({ x: 400, y: WORLD.GROUND_Y - 200, text: "THE GATE THIRSTS", range: 400 });
       s.hints.push({ x: 2500, y: WORLD.GROUND_Y - 300, text: "GATHER THE TRINITY", range: 400 });
       s.hints.push({ x: 2500, y: WORLD.GROUND_Y - 150, text: "SULFUR. MERCURY. SALT.", range: 400 });
+
+      // Hazard: Corrupted Sand
+      entities.push({ id: 'trap_ash', type: EntityType.SAND_TRAP, x: 2800, y: WORLD.GROUND_Y - 20, w: 400, h: 20, interacted: false, visible: true });
 
       // Central Hub: Alchemy Cauldron
       entities.push({ id: 'cauldron', type: EntityType.ALCHEMY_CAULDRON, x: 2500, y: WORLD.GROUND_Y - 120, w: 120, h: 120, interacted: false, visible: true, data: { ingredients: 0, maxIngredients: 3, complete: false } });
@@ -552,16 +565,27 @@ export const Game: React.FC<GameProps> = ({
             p.color = `rgba(200, 180, 140, ${0.3 + (s.player.tasksCompleted * 0.1)})`;
         });
     } else if (episode === 2) {
-        // Find wind tunnel
+        // Intermittent Wind Gust Logic
+        s.windGustTimer += dt;
+        if (s.isGusting && s.windGustTimer > 2.0) {
+            s.isGusting = false; s.windGustTimer = 0;
+        } else if (!s.isGusting && s.windGustTimer > 8.0) {
+            if (Math.random() < 0.005) { // Random chance to start
+                s.isGusting = true; s.windGustTimer = 0;
+                generateWhisper("The wind howls.");
+            }
+        }
+
+        // Find wind tunnel (constant wind)
         const wind = s.entities.find(e => e.type === EntityType.WIND_TUNNEL);
-        const isWindy = wind?.data.active ?? false;
+        const isTunnelActive = wind?.data.active ?? false;
         
         s.envParticles.forEach(p => {
-             // If windy, move fast left. If fixed (turbine fixed), calm drift.
-             const targetVx = isWindy ? -15 : -1;
+             // If tunnel active OR gusting, move fast left.
+             const targetVx = (isTunnelActive || s.isGusting) ? -25 : -1;
              p.vx += (targetVx - p.vx) * 0.05; // Smooth transition
              p.vy = Math.sin(Date.now() * 0.005 + p.x) * 2;
-             p.color = isWindy ? 'rgba(200, 255, 200, 0.4)' : 'rgba(255, 255, 255, 0.2)';
+             p.color = (isTunnelActive || s.isGusting) ? 'rgba(230, 255, 230, 0.6)' : 'rgba(255, 255, 255, 0.2)';
         });
     } else if (episode === 3) {
         // Find cauldron
@@ -605,6 +629,7 @@ export const Game: React.FC<GameProps> = ({
     const s = stateRef.current;
     const p = s.player;
     let windForce = 0;
+    let inSandTrap = false;
     
     // Check Platforms first to set grounded height
     let platformY = WORLD.GROUND_Y;
@@ -615,9 +640,18 @@ export const Game: React.FC<GameProps> = ({
            platformY = e.y;
        }
        if (e.type === EntityType.WIND_TUNNEL && e.data.active && checkOverlap({x: p.pos.x, y: p.pos.y, w: 40, h: 80}, e)) {
-           windForce = e.data.force;
+           windForce += e.data.force;
+       }
+       // Sand Trap Logic
+       if (e.type === EntityType.SAND_TRAP && checkOverlap({x: p.pos.x + 10, y: p.pos.y + 60, w: 20, h: 20}, e)) {
+           inSandTrap = true;
+           if (Math.random() < 0.2 && Math.abs(p.vel.x) > 0.5) {
+               spawnParticles(p.pos.x + 20, p.pos.y + 80, '#333', 1);
+           }
        }
     });
+
+    if (s.isGusting) windForce += -1.5;
 
     if (episode === 4 && s.keys['KeyE']) {
       p.isShielding = true;
@@ -627,7 +661,10 @@ export const Game: React.FC<GameProps> = ({
     }
 
     const speedMod = 1 - (p.tasksCompleted * 0.15);
-    const moveS = PHYSICS.MOVE_SPEED * speedMod;
+    let moveS = PHYSICS.MOVE_SPEED * speedMod;
+    
+    // Sand Trap slows movement
+    if (inSandTrap) moveS *= 0.4;
     
     if (!s.dialogueActive) {
       if (s.keys['ArrowRight']) { p.vel.x += moveS * 0.5; p.facingRight = true; }
@@ -639,6 +676,13 @@ export const Game: React.FC<GameProps> = ({
     const maxS = p.draggingItem || p.isShielding ? 2.5 : PHYSICS.MAX_SPEED;
     p.vel.x = Math.max(-maxS, Math.min(maxS, p.vel.x));
     
+    // Idle Timer Logic
+    if (Math.abs(p.vel.x) < 0.1 && p.grounded && !p.isSlashing && !p.isInteracting) {
+        p.idleTime += dt;
+    } else {
+        p.idleTime = 0;
+    }
+
     // Movement Trail
     const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
     if (Math.abs(p.vel.x) > 4 && Math.random() < 0.3) {
@@ -655,6 +699,7 @@ export const Game: React.FC<GameProps> = ({
         spawnParticles(p.pos.x + 20, platformY, COLORS.GREY, 10);
       }
       p.pos.y = platformY - 80; p.vel.y = 0; p.grounded = true;
+      if (inSandTrap) p.pos.y += 10; // Sink into sand
     } else p.grounded = false;
     s.lastGrounded = p.grounded;
 
@@ -693,8 +738,36 @@ export const Game: React.FC<GameProps> = ({
 
   const drawPlayer = (ctx: CanvasRenderingContext2D) => {
     const p = stateRef.current.player;
-    const squash = 1 + (Math.abs(p.vel.y) * 0.03);
-    const stretch = 1 / squash;
+    // Base animation
+    let squash = 1 + (Math.abs(p.vel.y) * 0.03);
+    let stretch = 1 / squash;
+    
+    // Idle Animations
+    if (p.idleTime > 0.5) {
+        const t = Date.now();
+        if (episode === 1) { 
+            // Exhausted breathing
+            stretch = 1 + Math.sin(t / 400) * 0.05;
+            squash = 1 / stretch;
+        } else if (episode === 2) {
+            // Shivering
+            ctx.translate(Math.random() * 2 - 1, 0);
+        } else if (episode === 3) {
+            // Sickness/Hunching
+            if (Math.random() < 0.02) squash = 0.8; // Random hunch
+            if (Math.random() < 0.05) ctx.filter = 'hue-rotate(90deg)'; // Sickly flash
+        } else if (episode === 4) {
+            // Glitching/Transforming
+            if (Math.random() < 0.1) {
+                ctx.translate(Math.random() * 4 - 2, 0);
+                stretch = 1.2;
+            }
+            // Shadow Wing
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath(); ctx.moveTo(0, -60); ctx.lineTo(-40, -100); ctx.lineTo(-10, -50); ctx.fill();
+        }
+    }
+
     const burdenAlpha = Math.min(0.9, p.tasksCompleted * 0.25);
     const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
 
@@ -761,6 +834,8 @@ export const Game: React.FC<GameProps> = ({
     }
     
     ctx.restore();
+    // Reset filter from "sickness"
+    ctx.filter = 'none';
   };
 
   const drawBoss = (ctx: CanvasRenderingContext2D, x: number, y: number, facingRight: boolean, stunTimer: number) => {
@@ -864,6 +939,12 @@ export const Game: React.FC<GameProps> = ({
       } else if (ent.type === EntityType.DRAGGABLE_STONE) { 
         ctx.fillStyle = '#4B3621'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h); 
         ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 4; ctx.strokeRect(ent.x+10, ent.y+10, ent.w-20, ent.h-20);
+      } else if (ent.type === EntityType.SAND_TRAP) {
+        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(ent.x, ent.y + 5, ent.w, ent.h);
+        // Quicksand particles
+        if (Math.random() < 0.1) {
+            ctx.fillStyle = '#555'; ctx.fillRect(ent.x + Math.random() * ent.w, ent.y + Math.random() * 10, 3, 3);
+        }
       } else if (ent.type === EntityType.OFFERING_BOWL) { 
         ctx.fillStyle = '#111'; 
         ctx.beginPath(); ctx.moveTo(ent.x, ent.y); ctx.lineTo(ent.x + ent.w, ent.y); ctx.lineTo(ent.x + ent.w - 20, ent.y + ent.h); ctx.lineTo(ent.x + 20, ent.y + ent.h); ctx.closePath(); ctx.fill();

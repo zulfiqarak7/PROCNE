@@ -28,6 +28,7 @@ export enum EntityType {
   DOOR = 'DOOR',
   // New Types
   WIND_TUNNEL = 'WIND_TUNNEL',
+  SAND_TRAP = 'SAND_TRAP',
   OFFERING_BOWL = 'OFFERING_BOWL',
   COLLECTIBLE_BONE = 'COLLECTIBLE_BONE',
   BOSS = 'BOSS',
@@ -81,6 +82,7 @@ export interface PlayerState {
   tasksCompleted: number;
   items: string[];
   animTimer: number;
+  idleTime: number; // Time spent standing still
   hp: number;
   maxHp: number;
 }
