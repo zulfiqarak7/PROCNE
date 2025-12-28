@@ -83,13 +83,13 @@ export const Game: React.FC<GameProps> = ({
       y: Math.random() * WORLD.HEIGHT,
       vx: 0,
       vy: 0,
-      size: Math.random() * 2 + 1,
-      color: 'rgba(255,255,255,0.2)'
+      size: Math.random() * 3 + 1,
+      color: 'rgba(255,255,255,0.4)'
     })),
     lastGrounded: false,
     bgLayers: [
       { 
-        speed: 0.03, h: 500, color: 'rgba(0,0,0,0.08)', 
+        speed: 0.03, h: 500, color: 'rgba(0,0,0,0.1)', 
         objects: [
           {x: 100, y: 50, w: 120, h: 400, type: 'rect'}, 
           {x: 800, y: 100, w: 200, h: 300, type: 'arch'}, 
@@ -98,7 +98,7 @@ export const Game: React.FC<GameProps> = ({
         ]
       },
       { 
-        speed: 0.1, h: 400, color: 'rgba(0,0,0,0.12)', 
+        speed: 0.1, h: 400, color: 'rgba(0,0,0,0.15)', 
         objects: [
           {x: 300, y: 200, w: 50, h: 200, type: 'pillar'}, 
           {x: 1000, y: 180, w: 120, h: 220, type: 'arch'}, 
@@ -107,7 +107,7 @@ export const Game: React.FC<GameProps> = ({
         ]
       },
       { 
-        speed: 0.25, h: 280, color: 'rgba(0,0,0,0.2)', 
+        speed: 0.25, h: 280, color: 'rgba(0,0,0,0.25)', 
         objects: [
           {x: 150, y: 350, w: 30, h: 120, type: 'pillar'}, 
           {x: 700, y: 400, w: 40, h: 80, type: 'rect'}, 
@@ -125,14 +125,11 @@ export const Game: React.FC<GameProps> = ({
     s.player.vel = { x: 0, y: 0 };
     const boss = s.entities.find(e => e.type === EntityType.BOSS);
     if (boss) {
-      boss.x = 600;
-      boss.y = WORLD.GROUND_Y - 240;
-      boss.data.hp = 20;
-      boss.data.stunTimer = 0;
-      boss.data.hitsTaken = 0;
+      boss.x = 600; boss.y = WORLD.GROUND_Y - 240;
+      boss.data.hp = 20; boss.data.stunTimer = 0; boss.data.hitsTaken = 0;
     }
-    s.shake = 10;
-    generateWhisper("Death is but a stutter in the cycle.");
+    s.shake = 15;
+    generateWhisper("The cycle resets. Endure.");
   };
 
   const generateWhisper = async (prompt: string) => {
@@ -149,15 +146,13 @@ export const Game: React.FC<GameProps> = ({
         onDialogue(response.text);
         stateRef.current.dialogueActive = true;
       }
-    } catch (e) {
-      console.error("AI Whisper failed", e);
-    }
+    } catch (e) { console.error("AI Whisper failed", e); }
   };
 
   const spawnParticles = (x: number, y: number, color: string, count: number) => {
     for (let i = 0; i < count; i++) {
         stateRef.current.particles.push({
-            x, y, vx: (Math.random() - 0.5) * 14, vy: (Math.random() - 0.5) * 14, life: 0.8, color,
+            x, y, vx: (Math.random() - 0.5) * 14, vy: (Math.random() - 0.5) * 14, life: 1.2, color,
         });
     }
   };
@@ -170,161 +165,81 @@ export const Game: React.FC<GameProps> = ({
   const completeTask = (id: string, msg: string) => {
     const p = stateRef.current.player;
     if (!p.items.includes(id)) {
-      p.items.push(id);
-      p.tasksCompleted++;
+      p.items.push(id); p.tasksCompleted++;
       onTaskComplete(p.tasksCompleted);
       generateWhisper(msg);
-      triggerJuice(18, 0.12);
-      spawnParticles(p.pos.x + 20, p.pos.y + 40, COLORS.ORANGE, 25);
+      triggerJuice(20, 0.15);
+      spawnParticles(p.pos.x + 20, p.pos.y + 40, COLORS.GOLD, 40);
     }
   };
 
   useEffect(() => {
     const s = stateRef.current;
-    s.dialogueActive = false;
-    onDialogue(null);
-    s.player.pos = { x: 100, y: WORLD.GROUND_Y - 80 };
-    s.player.vel = { x: 0, y: 0 };
-    s.player.items = [];
-    s.player.tasksCompleted = 0;
-    s.player.draggingItem = null;
-    s.player.carriedItem = null;
-    s.player.carriedItemId = null;
-    s.camera.x = 0;
-    s.shake = 0;
-    s.particles = [];
-    s.hints = [];
-    s.player.hp = 3;
-    s.windGustTimer = 0;
-    s.isGusting = false;
+    s.dialogueActive = false; onDialogue(null);
+    s.player.pos = { x: 100, y: WORLD.GROUND_Y - 80 }; s.player.vel = { x: 0, y: 0 };
+    s.player.items = []; s.player.tasksCompleted = 0;
+    s.player.draggingItem = null; s.player.carriedItem = null;
+    s.camera.x = 0; s.shake = 0; s.particles = []; s.hints = [];
+    s.player.hp = 3; s.windGustTimer = 0; s.isGusting = false;
     
     const entities: Entity[] = [];
-    
-    // --- LEVEL 1: The Barren Sands (Tutorial) ---
     if (episode === 1) {
       onZoneChange("The Barren Sands");
-      
-      // Hints
-      s.hints.push({ x: 300, y: WORLD.GROUND_Y - 200, text: "USE ARROW KEYS TO MOVE", range: 300 });
-      s.hints.push({ x: 900, y: WORLD.GROUND_Y - 200, text: "SPACE TO JUMP", range: 300 });
-      s.hints.push({ x: 1500, y: WORLD.GROUND_Y - 200, text: "SPACE IN AIR TO SLASH", range: 300 });
-      s.hints.push({ x: 2800, y: WORLD.GROUND_Y - 200, text: "SEARCH THE EARTH", range: 300 });
-      s.hints.push({ x: 4000, y: WORLD.GROUND_Y - 350, text: "PRESS E TO ALIGN", range: 300 });
-      s.hints.push({ x: 5600, y: WORLD.GROUND_Y - 200, text: "HOLD E TO DRAG", range: 300 });
+      s.hints.push({ x: 300, y: WORLD.GROUND_Y - 200, text: "USE ARROWS TO MOVE", range: 300 });
+      s.hints.push({ x: 1500, y: WORLD.GROUND_Y - 200, text: "SPACE TO SLICE", range: 300 });
+      s.hints.push({ x: 4000, y: WORLD.GROUND_Y - 350, text: "E TO REALIGN", range: 300 });
 
-      // Entities
-      entities.push({ id: 'm1', type: EntityType.MOUND, x: 1500, y: WORLD.GROUND_Y - 60, w: 80, h: 60, interacted: false, visible: true, data: { hits: 0 } });
-      entities.push({ id: 'm2', type: EntityType.MOUND, x: 2800, y: WORLD.GROUND_Y - 70, w: 80, h: 70, interacted: false, visible: true, data: { hits: 0, hasRing: true } });
-      
-      // Hazards: Sand Traps
-      entities.push({ id: 'trap1', type: EntityType.SAND_TRAP, x: 2200, y: WORLD.GROUND_Y - 20, w: 200, h: 20, interacted: false, visible: true });
-      entities.push({ id: 'trap2', type: EntityType.SAND_TRAP, x: 5000, y: WORLD.GROUND_Y - 20, w: 300, h: 20, interacted: false, visible: true });
-
-      entities.push({ id: 'p1', type: EntityType.PILLAR, x: 4000, y: WORLD.GROUND_Y - 220, w: 40, h: 220, interacted: false, visible: true, data: { tilt: -24 } });
-      entities.push({ id: 'p2', type: EntityType.PILLAR, x: 4400, y: WORLD.GROUND_Y - 220, w: 40, h: 220, interacted: false, visible: true, data: { tilt: 24 } });
-      entities.push({ id: 'stone', type: EntityType.DRAGGABLE_STONE, x: 5600, y: WORLD.GROUND_Y - 80, w: 80, h: 80, interacted: false, visible: true });
-      entities.push({ id: 'pedestal', type: EntityType.PEDESTAL, x: 6800, y: WORLD.GROUND_Y - 40, w: 120, h: 40, interacted: false, visible: true });
-      entities.push({ id: 'door', type: EntityType.DOOR, x: 8200, y: WORLD.GROUND_Y - 200, w: 140, h: 200, interacted: false, visible: true });
-    } 
-    
-    // --- LEVEL 2: The Weaver's Tongue (Puzzle: Wind Turbine) ---
-    else if (episode === 2) {
+      entities.push({ id: 'm1', type: EntityType.MOUND, x: 1500, y: WORLD.GROUND_Y - 60, w: 100, h: 80, interacted: false, visible: true, data: { hits: 0 } });
+      entities.push({ id: 'm2', type: EntityType.MOUND, x: 2800, y: WORLD.GROUND_Y - 70, w: 100, h: 90, interacted: false, visible: true, data: { hits: 0, hasRing: true } });
+      entities.push({ id: 'trap1', type: EntityType.SAND_TRAP, x: 2200, y: WORLD.GROUND_Y - 20, w: 250, h: 30, interacted: false, visible: true });
+      entities.push({ id: 'p1', type: EntityType.PILLAR, x: 4000, y: WORLD.GROUND_Y - 220, w: 50, h: 220, interacted: false, visible: true, data: { tilt: -24 } });
+      entities.push({ id: 'p2', type: EntityType.PILLAR, x: 4400, y: WORLD.GROUND_Y - 220, w: 50, h: 220, interacted: false, visible: true, data: { tilt: 24 } });
+      entities.push({ id: 'stone', type: EntityType.DRAGGABLE_STONE, x: 5600, y: WORLD.GROUND_Y - 100, w: 100, h: 100, interacted: false, visible: true });
+      entities.push({ id: 'pedestal', type: EntityType.PEDESTAL, x: 6800, y: WORLD.GROUND_Y - 60, w: 140, h: 60, interacted: false, visible: true });
+      entities.push({ id: 'door', type: EntityType.DOOR, x: 8200, y: WORLD.GROUND_Y - 240, w: 160, h: 240, interacted: false, visible: true });
+    } else if (episode === 2) {
       onZoneChange("The Weaver's Tongue");
-      
-      // Hints
-      s.hints.push({ x: 400, y: WORLD.GROUND_Y - 300, text: "THE WIND REJECTS YOU", range: 400 });
-      s.hints.push({ x: 2200, y: WORLD.GROUND_Y - 250, text: "A MACHINE BROKEN", range: 300 });
-      s.hints.push({ x: 1000, y: WORLD.GROUND_Y - 400, text: "SEEK THE GEAR", range: 300 });
-
-      // Obstacle: Strong Wind Tunnel blocking progress at x=2500
       entities.push({ id: 'wind_force', type: EntityType.WIND_TUNNEL, x: 3000, y: WORLD.GROUND_Y - 400, w: 1500, h: 400, interacted: false, visible: true, data: { force: -2.5, active: true } });
-      
-      // Puzzle Item: Rusty Gear (Platforms lowered to be reachable with Jump Force -14 and Gravity 0.8)
-      entities.push({ id: 'platform_1', type: EntityType.PLATFORM, x: 1200, y: WORLD.GROUND_Y - 110, w: 200, h: 20, interacted: false, visible: true });
-      entities.push({ id: 'platform_2', type: EntityType.PLATFORM, x: 900, y: WORLD.GROUND_Y - 220, w: 150, h: 20, interacted: false, visible: true });
-      entities.push({ id: 'gear', type: EntityType.ITEM_GEAR, x: 950, y: WORLD.GROUND_Y - 260, w: 40, h: 40, interacted: false, visible: true });
-
-      // Puzzle Machine: Broken Turbine (Before the wind tunnel)
-      entities.push({ id: 'turbine', type: EntityType.MACHINE_TURBINE, x: 2200, y: WORLD.GROUND_Y - 200, w: 100, h: 200, interacted: false, visible: true, data: { fixed: false } });
-
-      // Reward: Key (In the wind tunnel area, only accessible after wind is off)
-      entities.push({ id: 'key', type: EntityType.ITEM_KEY, x: 3800, y: WORLD.GROUND_Y - 40, w: 40, h: 40, interacted: false, visible: true });
-
-      // Exit Door (Locked)
-      entities.push({ id: 'door', type: EntityType.DOOR, x: 4800, y: WORLD.GROUND_Y - 200, w: 140, h: 200, interacted: false, visible: true, data: { locked: true } });
-    } 
-    
-    // --- LEVEL 3: The Feast of Ash (Puzzle: Alchemy) ---
-    else if (episode === 3) {
+      entities.push({ id: 'platform_1', type: EntityType.PLATFORM, x: 1200, y: WORLD.GROUND_Y - 110, w: 250, h: 30, interacted: false, visible: true });
+      entities.push({ id: 'platform_2', type: EntityType.PLATFORM, x: 900, y: WORLD.GROUND_Y - 220, w: 200, h: 30, interacted: false, visible: true });
+      entities.push({ id: 'gear', type: EntityType.ITEM_GEAR, x: 950, y: WORLD.GROUND_Y - 260, w: 50, h: 50, interacted: false, visible: true });
+      entities.push({ id: 'turbine', type: EntityType.MACHINE_TURBINE, x: 2200, y: WORLD.GROUND_Y - 200, w: 120, h: 220, interacted: false, visible: true, data: { fixed: false } });
+      entities.push({ id: 'key', type: EntityType.ITEM_KEY, x: 3800, y: WORLD.GROUND_Y - 50, w: 50, h: 50, interacted: false, visible: true });
+      entities.push({ id: 'door', type: EntityType.DOOR, x: 4800, y: WORLD.GROUND_Y - 240, w: 160, h: 240, interacted: false, visible: true, data: { locked: true } });
+    } else if (episode === 3) {
       onZoneChange("The Feast of Ash");
-
-      // Hints
-      s.hints.push({ x: 400, y: WORLD.GROUND_Y - 200, text: "THE GATE THIRSTS", range: 400 });
-      s.hints.push({ x: 2500, y: WORLD.GROUND_Y - 300, text: "GATHER THE TRINITY", range: 400 });
-      s.hints.push({ x: 2500, y: WORLD.GROUND_Y - 150, text: "SULFUR. MERCURY. SALT.", range: 400 });
-
-      // Hazard: Corrupted Sand
-      entities.push({ id: 'trap_ash', type: EntityType.SAND_TRAP, x: 2800, y: WORLD.GROUND_Y - 20, w: 400, h: 20, interacted: false, visible: true });
-
-      // Central Hub: Alchemy Cauldron
-      entities.push({ id: 'cauldron', type: EntityType.ALCHEMY_CAULDRON, x: 2500, y: WORLD.GROUND_Y - 120, w: 120, h: 120, interacted: false, visible: true, data: { ingredients: 0, maxIngredients: 3, complete: false } });
-
-      // Ingredient 1: Sulfur (Yellow) - Hidden in a mound
-      entities.push({ id: 'mound_sulfur', type: EntityType.MOUND, x: 1000, y: WORLD.GROUND_Y - 60, w: 80, h: 60, interacted: false, visible: true, data: { hits: 0, hasItem: 'sulfur' } });
-      
-      // Ingredient 2: Salt (White) - On top of pillars (Lowered to be reachable)
-      entities.push({ id: 'plat_salt', type: EntityType.PLATFORM, x: 3500, y: WORLD.GROUND_Y - 110, w: 100, h: 20, interacted: false, visible: true });
-      entities.push({ id: 'salt', type: EntityType.ITEM_INGREDIENT, x: 3530, y: WORLD.GROUND_Y - 150, w: 40, h: 40, interacted: false, visible: true, data: { type: 'salt', color: '#fff' } });
-
-      // Ingredient 3: Mercury (Silver) - Far right, guarded by dragging puzzle
-      entities.push({ id: 'drag_block', type: EntityType.DRAGGABLE_STONE, x: 4200, y: WORLD.GROUND_Y - 100, w: 100, h: 100, interacted: false, visible: true });
-      // Mercury is hidden under the stone effectively (placed behind it initially?) No, let's put it on a ledge reachable by standing on stone
-      // Stone Top: 400. Platform: 310. Gap: 90 (Reachable).
-      entities.push({ id: 'plat_mercury', type: EntityType.PLATFORM, x: 4200, y: WORLD.GROUND_Y - 190, w: 100, h: 20, interacted: false, visible: true });
-      entities.push({ id: 'mercury', type: EntityType.ITEM_INGREDIENT, x: 4230, y: WORLD.GROUND_Y - 230, w: 40, h: 40, interacted: false, visible: true, data: { type: 'mercury', color: '#C0C0C0' } });
-
-      // Exit Door (Locked)
-      entities.push({ id: 'door', type: EntityType.DOOR, x: 5500, y: WORLD.GROUND_Y - 200, w: 140, h: 200, interacted: false, visible: true, data: { locked: true } });
-    } 
-    
-    // --- LEVEL 4: The Recurrence (Boss) ---
-    else if (episode === 4) {
+      entities.push({ id: 'cauldron', type: EntityType.ALCHEMY_CAULDRON, x: 2500, y: WORLD.GROUND_Y - 140, w: 140, h: 140, interacted: false, visible: true, data: { ingredients: 0, maxIngredients: 3, complete: false } });
+      entities.push({ id: 'mound_sulfur', type: EntityType.MOUND, x: 1000, y: WORLD.GROUND_Y - 60, w: 100, h: 80, interacted: false, visible: true, data: { hits: 0, hasItem: 'sulfur' } });
+      entities.push({ id: 'plat_salt', type: EntityType.PLATFORM, x: 3500, y: WORLD.GROUND_Y - 110, w: 120, h: 30, interacted: false, visible: true });
+      entities.push({ id: 'salt', type: EntityType.ITEM_INGREDIENT, x: 3530, y: WORLD.GROUND_Y - 150, w: 50, h: 50, interacted: false, visible: true, data: { type: 'salt', color: '#fff' } });
+      entities.push({ id: 'drag_block', type: EntityType.DRAGGABLE_STONE, x: 4200, y: WORLD.GROUND_Y - 120, w: 120, h: 120, interacted: false, visible: true });
+      entities.push({ id: 'plat_mercury', type: EntityType.PLATFORM, x: 4200, y: WORLD.GROUND_Y - 200, w: 120, h: 30, interacted: false, visible: true });
+      entities.push({ id: 'mercury', type: EntityType.ITEM_INGREDIENT, x: 4230, y: WORLD.GROUND_Y - 240, w: 50, h: 50, interacted: false, visible: true, data: { type: 'mercury', color: '#E5E7E9' } });
+      entities.push({ id: 'door', type: EntityType.DOOR, x: 5500, y: WORLD.GROUND_Y - 240, w: 160, h: 240, interacted: false, visible: true, data: { locked: true } });
+    } else if (episode === 4) {
       onZoneChange("The Recurrence");
-      s.hints.push({ x: 400, y: WORLD.GROUND_Y - 200, text: "END THE CYCLE", range: 400 });
       s.player.pos.x = 200;
-      entities.push({ id: 'boss', type: EntityType.BOSS, x: 600, y: WORLD.GROUND_Y - 240, w: 100, h: 240, interacted: false, visible: true, data: { hp: 20, maxHp: 20, stunTimer: 0, hitsTaken: 0 } });
+      entities.push({ id: 'boss', type: EntityType.BOSS, x: 600, y: WORLD.GROUND_Y - 240, w: 120, h: 260, interacted: false, visible: true, data: { hp: 20, maxHp: 20, stunTimer: 0, hitsTaken: 0 } });
     }
     s.entities = entities;
-    generateWhisper(`A watcher returns to the cycle. Episode ${episode}.`);
+    generateWhisper(`The journey deepens. Episode ${episode}.`);
   }, [episode]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       stateRef.current.keys[e.code] = true;
       if (e.code === 'KeyE') {
-        if (stateRef.current.dialogueActive) { 
-          onDialogue(null); 
-          stateRef.current.dialogueActive = false; 
-        } else { 
-          stateRef.current.player.isInteracting = true; 
-          stateRef.current.player.interactionPressed = true;
-        }
+        if (stateRef.current.dialogueActive) { onDialogue(null); stateRef.current.dialogueActive = false; }
+        else { stateRef.current.player.isInteracting = true; stateRef.current.player.interactionPressed = true; }
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       stateRef.current.keys[e.code] = false;
       if (e.code === 'Space') stateRef.current.player.isSlashing = false;
-      if (e.code === 'KeyE') { 
-        stateRef.current.player.isInteracting = false; 
-        stateRef.current.player.draggingItem = null; 
-      }
+      if (e.code === 'KeyE') { stateRef.current.player.isInteracting = false; stateRef.current.player.draggingItem = null; }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => { 
-      window.removeEventListener('keydown', handleKeyDown); 
-      window.removeEventListener('keyup', handleKeyUp); 
-    };
+    window.addEventListener('keydown', handleKeyDown); window.addEventListener('keyup', handleKeyUp);
+    return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
   }, [onDialogue]);
 
   const checkOverlap = (r1: Box, r2: Box) => r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
@@ -333,732 +248,262 @@ export const Game: React.FC<GameProps> = ({
     const s = stateRef.current;
     const boss = s.entities.find(e => e.type === EntityType.BOSS);
     if (!boss || boss.interacted) return;
-
-    if (boss.data.stunTimer > 0) {
-      boss.data.stunTimer -= dt;
-      boss.data.hitsTaken = 0;
-      return;
-    }
-
-    s.bossTimer += dt;
-    if (s.bossInvuln > 0) s.bossInvuln -= dt;
-
+    if (boss.data.stunTimer > 0) { boss.data.stunTimer -= dt; boss.data.hitsTaken = 0; return; }
+    s.bossTimer += dt; if (s.bossInvuln > 0) s.bossInvuln -= dt;
     const dist = s.player.pos.x - boss.x;
     const phase = boss.data.hp > 10 ? 1 : 2;
-
     if (s.bossTimer > (3.5 - phase * 0.7)) {
-      s.bossTimer = 0;
-      if (Math.abs(dist) > 350) s.bossAction = 'THROW';
-      else s.bossAction = 'DASH';
+      s.bossTimer = 0; s.bossAction = Math.abs(dist) > 350 ? 'THROW' : 'DASH';
     }
-
     if (s.bossAction === 'DASH') {
       boss.x += Math.sign(dist) * (14 + phase * 4);
-      if (Math.abs(dist) < 50) { 
-        s.bossAction = 'WAIT'; 
-        triggerJuice(15);
-        spawnParticles(boss.x + 50, WORLD.GROUND_Y, COLORS.WHITE, 5);
-      }
+      if (Math.abs(dist) < 50) { s.bossAction = 'WAIT'; triggerJuice(20); spawnParticles(boss.x + 50, WORLD.GROUND_Y, COLORS.WHITE, 15); }
     } else if (s.bossAction === 'THROW') {
-      s.entities.push({ 
-        id: `p${Date.now()}`, 
-        type: EntityType.PROJECTILE, 
-        x: boss.x + 50, 
-        y: boss.y + 100, 
-        w: 35, h: 8, 
-        visible: true, 
-        interacted: false, 
-        data: { vx: Math.sign(dist) * (18 + phase * 2) } 
-      });
+      s.entities.push({ id: `p${Date.now()}`, type: EntityType.PROJECTILE, x: boss.x + 50, y: boss.y + 100, w: 40, h: 10, visible: true, interacted: false, data: { vx: Math.sign(dist) * (18 + phase * 2) } });
       s.bossAction = 'WAIT';
-    } else {
-      boss.x += Math.sign(dist) * (4 + phase);
-    }
-
+    } else { boss.x += Math.sign(dist) * (4 + phase); }
     if (checkOverlap({x: s.player.pos.x, y: s.player.pos.y, w: 40, h: 80}, boss)) {
-      if (s.player.isShielding) {
-        s.player.vel.x = -Math.sign(dist) * 8;
-        spawnParticles(s.player.pos.x + 20, s.player.pos.y + 40, COLORS.WHITE, 10);
-      } else {
-        s.player.vel.x = -Math.sign(dist) * 22;
-        s.player.hp--;
-        triggerJuice(15, 0.05);
-        spawnParticles(s.player.pos.x + 20, s.player.pos.y + 40, "#ff0000", 6);
-        if (s.player.hp <= 0) resetBossLevel();
-      }
+      if (s.player.isShielding) { s.player.vel.x = -Math.sign(dist) * 10; spawnParticles(s.player.pos.x + 20, s.player.pos.y + 40, COLORS.WHITE, 15); }
+      else { s.player.vel.x = -Math.sign(dist) * 25; s.player.hp--; triggerJuice(20, 0.1); spawnParticles(s.player.pos.x + 20, s.player.pos.y + 40, "#ff0000", 10); if (s.player.hp <= 0) resetBossLevel(); }
     }
   };
 
   const updateEntities = (dt: number) => {
-    const s = stateRef.current;
-    const p = s.player;
-
+    const s = stateRef.current; const p = s.player;
     const slashBox = { x: p.facingRight ? p.pos.x + 40 : p.pos.x - 120, y: p.pos.y, w: 140, h: 80 };
     const interactBox = { x: p.pos.x - 40, y: p.pos.y - 30, w: 120, h: 140 };
-
     for (let i = s.entities.length - 1; i >= 0; i--) {
-      const ent = s.entities[i];
-      if (!ent.visible) continue;
-
+      const ent = s.entities[i]; if (!ent.visible) continue;
       if (checkOverlap(interactBox, ent)) {
-        // --- ITEM PICKUP LOGIC ---
         if ((ent.type === EntityType.ITEM_GEAR || ent.type === EntityType.ITEM_KEY || ent.type === EntityType.ITEM_INGREDIENT || ent.type === EntityType.ITEM_HEART) && p.interactionPressed) {
-          if (p.carriedItem === null) {
-            ent.visible = false;
-            p.carriedItem = ent.type;
-            p.carriedItemId = ent.id;
-            generateWhisper(ent.type === EntityType.ITEM_GEAR ? "A rusted mechanism." : ent.type === EntityType.ITEM_KEY ? "The way forward." : "An offering for the flame.");
-            triggerJuice(5);
-          } else {
-            generateWhisper("Hands are full.");
-          }
+          if (p.carriedItem === null) { ent.visible = false; p.carriedItem = ent.type; p.carriedItemId = ent.id; generateWhisper("A fragment found."); triggerJuice(10); }
+          else generateWhisper("Too many burdens.");
         }
-
-        // --- LEVEL 1 LOGIC ---
         if (ent.type === EntityType.DOOR && p.interactionPressed) {
-          if (episode === 1) {
-            const req = 3;
-            if (p.tasksCompleted >= req) onFinish();
-            else { generateWhisper(`The path is closed. Seek more.`); triggerJuice(8); }
-          } else if (episode === 2) {
-             if (p.carriedItem === EntityType.ITEM_KEY) {
-               p.carriedItem = null;
-               ent.data.locked = false;
-               onFinish();
-             } else {
-               generateWhisper("Locked by a crystal mechanism.");
-             }
-          } else if (episode === 3) {
-            if (p.carriedItem === EntityType.ITEM_HEART) {
-               p.carriedItem = null;
-               ent.data.locked = false;
-               onFinish();
-            } else {
-               generateWhisper("It craves a heart.");
-            }
-          } else if (episode === 4 && ent.interacted) {
-             onFinish();
-          }
+          if (episode === 1 && p.tasksCompleted >= 3) onFinish();
+          else if (episode === 2 && p.carriedItem === EntityType.ITEM_KEY) { p.carriedItem = null; onFinish(); }
+          else if (episode === 3 && p.carriedItem === EntityType.ITEM_HEART) { p.carriedItem = null; onFinish(); }
+          else if (episode === 4 && ent.interacted) onFinish();
+          else { generateWhisper("The gate remains cold."); triggerJuice(10); }
         }
-
         if (ent.type === EntityType.PILLAR && p.interactionPressed && !ent.interacted) {
-          ent.data.tilt += (ent.data.tilt < 0 ? 12 : -12);
-          triggerJuice(10);
-          if (Math.abs(ent.data.tilt) < 5) {
-            ent.data.tilt = 0; ent.interacted = true;
-            if (s.entities.filter(e => e.type === EntityType.PILLAR).every(p => p.interacted)) {
-              completeTask('pillar', "Monoliths aligned.");
-            }
-          }
+          ent.data.tilt += (ent.data.tilt < 0 ? 12 : -12); triggerJuice(12);
+          if (Math.abs(ent.data.tilt) < 5) { ent.data.tilt = 0; ent.interacted = true; if (s.entities.filter(e => e.type === EntityType.PILLAR).every(p => p.interacted)) completeTask('pillar', "Monoliths aligned."); }
         }
-        if (ent.type === EntityType.DRAGGABLE_STONE && p.isInteracting && episode !== 4) {
-          p.draggingItem = ent.id;
-          ent.x = p.facingRight ? p.pos.x + 50 : p.pos.x - 70;
-        }
-
-        // --- LEVEL 2 PUZZLE LOGIC (TURBINE) ---
+        if (ent.type === EntityType.DRAGGABLE_STONE && p.isInteracting && episode !== 4) { p.draggingItem = ent.id; ent.x = p.facingRight ? p.pos.x + 50 : p.pos.x - 70; }
         if (ent.type === EntityType.MACHINE_TURBINE && p.interactionPressed) {
-          if (p.carriedItem === EntityType.ITEM_GEAR) {
-             p.carriedItem = null;
-             ent.data.fixed = true;
-             // Disable wind tunnel
-             const wind = s.entities.find(e => e.type === EntityType.WIND_TUNNEL);
-             if (wind) wind.data.active = false;
-             generateWhisper("The machine groans and halts.");
-             triggerJuice(20, 0.1);
-             spawnParticles(ent.x + 50, ent.y + 100, COLORS.GREY, 30);
-          } else if (!ent.data.fixed) {
-             generateWhisper("Missing a gear.");
-          }
+          if (p.carriedItem === EntityType.ITEM_GEAR) { p.carriedItem = null; ent.data.fixed = true; const wind = s.entities.find(e => e.type === EntityType.WIND_TUNNEL); if (wind) wind.data.active = false; generateWhisper("Peace returns."); triggerJuice(25, 0.1); spawnParticles(ent.x + 50, ent.y + 100, COLORS.GREY, 40); }
+          else if (!ent.data.fixed) generateWhisper("Mechanical failure.");
         }
-
-        // --- LEVEL 3 PUZZLE LOGIC (ALCHEMY) ---
         if (ent.type === EntityType.ALCHEMY_CAULDRON && p.interactionPressed) {
-           if (p.carriedItem === EntityType.ITEM_INGREDIENT) {
-             p.carriedItem = null;
-             ent.data.ingredients++;
-             triggerJuice(10);
-             spawnParticles(ent.x + 60, ent.y + 60, COLORS.ORANGE, 20);
-             if (ent.data.ingredients >= 3) {
-                ent.data.complete = true;
-                // Spawn Heart
-                s.entities.push({ id: 'heart', type: EntityType.ITEM_HEART, x: ent.x + 40, y: ent.y - 50, w: 40, h: 40, interacted: false, visible: true });
-                generateWhisper("The mixture solidifies.");
-             } else {
-               generateWhisper(`${ent.data.ingredients} of 3 added.`);
-             }
-           } else if (!ent.data.complete) {
-             generateWhisper("Requires Sulfur, Salt, and Mercury.");
-           }
+          if (p.carriedItem === EntityType.ITEM_INGREDIENT) { p.carriedItem = null; ent.data.ingredients++; triggerJuice(15); spawnParticles(ent.x + 70, ent.y + 70, COLORS.ORANGE, 30); if (ent.data.ingredients >= 3) { ent.data.complete = true; s.entities.push({ id: 'heart', type: EntityType.ITEM_HEART, x: ent.x + 40, y: ent.y - 70, w: 60, h: 60, interacted: false, visible: true }); generateWhisper("Ritual complete."); } }
         }
       }
-
-      if (ent.type === EntityType.PEDESTAL && !ent.interacted) {
-        const stone = s.entities.find(e => e.id === 'stone');
-        if (stone && checkOverlap(stone, ent)) {
-          ent.interacted = true; completeTask('altar', "Altar set.");
-        }
-      }
-
       if (p.isSlashing && checkOverlap(slashBox, ent)) {
         if (ent.type === EntityType.MOUND && !ent.interacted) {
-          ent.data.hits++;
-          spawnParticles(ent.x + 40, ent.y + 30, COLORS.WHITE, 5);
-          triggerJuice(6, 0.05);
-          if (ent.data.hits >= 4) {
-            ent.interacted = true; ent.visible = false;
-            // Reveal Item inside mound
-            if (ent.data.hasRing) completeTask('mound_' + ent.id, "Unearthed.");
-            if (ent.data.hasItem === 'sulfur') {
-               s.entities.push({ id: 'sulfur', type: EntityType.ITEM_INGREDIENT, x: ent.x + 20, y: ent.y, w: 40, h: 40, interacted: false, visible: true, data: { type: 'sulfur', color: '#FFD700' } });
-               generateWhisper("Sulfur revealed.");
-            }
-          }
+          ent.data.hits++; spawnParticles(ent.x + 50, ent.y + 40, COLORS.WHITE, 8); triggerJuice(10, 0.05);
+          if (ent.data.hits >= 4) { ent.interacted = true; ent.visible = false; if (ent.data.hasRing) completeTask('mound_' + ent.id, "Unearthed."); if (ent.data.hasItem === 'sulfur') { s.entities.push({ id: 'sulfur', type: EntityType.ITEM_INGREDIENT, x: ent.x + 25, y: ent.y, w: 50, h: 50, interacted: false, visible: true, data: { type: 'sulfur', color: '#FFD700' } }); } }
         }
         if (ent.type === EntityType.BOSS && s.bossInvuln <= 0 && ent.data.stunTimer <= 0) {
-          ent.data.hp--; 
-          ent.data.hitsTaken++;
-          s.bossInvuln = 0.4;
-          triggerJuice(35, 0.18);
-          spawnParticles(ent.x + 50, ent.y + 120, '#ff0000', 25);
-          if (ent.data.hitsTaken >= 4) {
-             ent.data.stunTimer = 5;
-             generateWhisper("Stunned by your resolve.");
-          }
+          ent.data.hp--; ent.data.hitsTaken++; s.bossInvuln = 0.4; triggerJuice(40, 0.2); spawnParticles(ent.x + 60, ent.y + 120, '#ff0000', 30);
+          if (ent.data.hitsTaken >= 4) { ent.data.stunTimer = 5; generateWhisper("The beast falters."); }
           if (ent.data.hp <= 0) { ent.interacted = true; onFinish(); }
         }
       }
-
-      if (ent.type === EntityType.PROJECTILE) {
-        ent.x += ent.data.vx;
-        if (checkOverlap({x: p.pos.x, y: p.pos.y, w: 40, h: 80}, ent)) {
-          s.entities.splice(i, 1);
-          if (p.isShielding) {
-            triggerJuice(5, 0.05);
-            spawnParticles(p.pos.x + 20, p.pos.y + 40, COLORS.WHITE, 15);
-          } else {
-            p.hp--;
-            triggerJuice(25, 0.12);
-            p.vel.x = -Math.sign(ent.data.vx) * 22;
-            spawnParticles(p.pos.x + 20, p.pos.y + 40, COLORS.WHITE, 12);
-            if (p.hp <= 0) resetBossLevel();
-          }
-        } else if (Math.abs(ent.x - s.camera.x) > 1500) {
-          s.entities.splice(i, 1);
-        }
-      }
+      if (ent.type === EntityType.PROJECTILE) { ent.x += ent.data.vx; if (checkOverlap({x: p.pos.x, y: p.pos.y, w: 40, h: 80}, ent)) { s.entities.splice(i, 1); if (p.isShielding) { triggerJuice(8, 0.05); spawnParticles(p.pos.x + 20, p.pos.y + 40, COLORS.WHITE, 20); } else { p.hp--; triggerJuice(30, 0.15); p.vel.x = -Math.sign(ent.data.vx) * 25; spawnParticles(p.pos.x + 20, p.pos.y + 40, COLORS.WHITE, 15); if (p.hp <= 0) resetBossLevel(); } } else if (Math.abs(ent.x - s.camera.x) > 1500) s.entities.splice(i, 1); }
+    }
+    if (s.entities.find(e => e.id === 'stone') && s.entities.find(e => e.type === EntityType.PEDESTAL)) {
+        const stone = s.entities.find(e => e.id === 'stone')!;
+        const ped = s.entities.find(e => e.type === EntityType.PEDESTAL)!;
+        if (!ped.interacted && checkOverlap(stone, ped)) { ped.interacted = true; completeTask('altar', "Balance restored."); }
     }
     p.interactionPressed = false;
   };
 
   const updateEnvironment = (dt: number) => {
-    const s = stateRef.current;
-    const w = WORLD.VIEWPORT_WIDTH;
-    const h = WORLD.HEIGHT;
-
-    // Episode specific logic
-    if (episode === 1) {
-        const intensity = 1 + (s.player.tasksCompleted * 0.5);
-        s.envParticles.forEach(p => {
-            p.vx = intensity * 2 * (p.size * 0.5);
-            p.vy = 0.5;
-            p.color = `rgba(200, 180, 140, ${0.3 + (s.player.tasksCompleted * 0.1)})`;
-        });
-    } else if (episode === 2) {
-        // Intermittent Wind Gust Logic
-        s.windGustTimer += dt;
-        if (s.isGusting && s.windGustTimer > 2.0) {
-            s.isGusting = false; s.windGustTimer = 0;
-        } else if (!s.isGusting && s.windGustTimer > 8.0) {
-            if (Math.random() < 0.005) { // Random chance to start
-                s.isGusting = true; s.windGustTimer = 0;
-                generateWhisper("The wind howls.");
-            }
-        }
-
-        // Find wind tunnel (constant wind)
-        const wind = s.entities.find(e => e.type === EntityType.WIND_TUNNEL);
-        const isTunnelActive = wind?.data.active ?? false;
-        
-        s.envParticles.forEach(p => {
-             // If tunnel active OR gusting, move fast left.
-             const targetVx = (isTunnelActive || s.isGusting) ? -25 : -1;
-             p.vx += (targetVx - p.vx) * 0.05; // Smooth transition
-             p.vy = Math.sin(Date.now() * 0.005 + p.x) * 2;
-             p.color = (isTunnelActive || s.isGusting) ? 'rgba(230, 255, 230, 0.6)' : 'rgba(255, 255, 255, 0.2)';
-        });
-    } else if (episode === 3) {
-        // Find cauldron
-        const cauldron = s.entities.find(e => e.type === EntityType.ALCHEMY_CAULDRON);
-        const heat = cauldron ? cauldron.data.ingredients : 0;
-        
-        s.envParticles.forEach(p => {
-            p.vy = -1 - (heat * 1.5); // Rise faster with heat
-            p.vx = Math.sin(Date.now() * 0.002 + p.y * 0.05) * 0.5;
-            // Shift from grey to orange
-            if (heat >= 3) p.color = 'rgba(255, 69, 0, 0.6)'; // Red/Orange
-            else if (heat >= 1) p.color = 'rgba(255, 140, 0, 0.4)';
-            else p.color = 'rgba(100, 100, 100, 0.3)';
-        });
-    } else if (episode === 4) {
-        // Glitchy
-        s.envParticles.forEach(p => {
-            if (Math.random() < 0.05) {
-                p.x = Math.random() * w;
-                p.y = Math.random() * h;
-            }
-            p.vy = 5; // Rain
-            p.color = 'rgba(0, 255, 0, 0.2)';
-        });
-    }
-
-    // Move particles
-    s.envParticles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Wrap around
-        if (p.x > w) p.x = 0;
-        if (p.x < 0) p.x = w;
-        if (p.y > h) p.y = 0;
-        if (p.y < 0) p.y = h;
-    });
+    const s = stateRef.current; const w = WORLD.VIEWPORT_WIDTH; const h = WORLD.HEIGHT;
+    if (episode === 1) { const intensity = 1 + (s.player.tasksCompleted * 0.5); s.envParticles.forEach(p => { p.vx = intensity * 3 * (p.size * 0.4); p.vy = 0.5; p.color = `rgba(255, 215, 0, ${0.4 + (s.player.tasksCompleted * 0.1)})`; }); }
+    else if (episode === 2) { s.windGustTimer += dt; if (s.isGusting && s.windGustTimer > 2.0) { s.isGusting = false; s.windGustTimer = 0; } else if (!s.isGusting && s.windGustTimer > 8.0) { if (Math.random() < 0.005) { s.isGusting = true; s.windGustTimer = 0; generateWhisper("Winds roar."); } }
+    const isW = (s.entities.find(e => e.type === EntityType.WIND_TUNNEL)?.data.active ?? false) || s.isGusting; s.envParticles.forEach(p => { const tvx = isW ? -30 : -2; p.vx += (tvx - p.vx) * 0.05; p.vy = Math.sin(Date.now() * 0.005 + p.x) * 3; p.color = isW ? 'rgba(230, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.3)'; }); }
+    else if (episode === 3) { const heat = s.entities.find(e => e.type === EntityType.ALCHEMY_CAULDRON)?.data.ingredients ?? 0; s.envParticles.forEach(p => { p.vy = -1.5 - (heat * 2); p.vx = Math.sin(Date.now() * 0.002 + p.y * 0.05) * 1; if (heat >= 3) p.color = 'rgba(255, 87, 51, 0.8)'; else if (heat >= 1) p.color = 'rgba(255, 195, 11, 0.6)'; else p.color = 'rgba(150, 150, 150, 0.4)'; }); }
+    else if (episode === 4) { s.envParticles.forEach(p => { if (Math.random() < 0.05) { p.x = Math.random() * w; p.y = Math.random() * h; } p.vy = 8; p.color = 'rgba(52, 152, 219, 0.4)'; }); }
+    s.envParticles.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x > w) p.x = 0; if (p.x < 0) p.x = w; if (p.y > h) p.y = 0; if (p.y < 0) p.y = h; });
   };
 
   const updatePhysics = (dt: number) => {
-    const s = stateRef.current;
-    const p = s.player;
-    let windForce = 0;
-    let inSandTrap = false;
-    
-    // Check Platforms first to set grounded height
-    let platformY = WORLD.GROUND_Y;
-    s.entities.forEach(e => {
-       if (e.type === EntityType.PLATFORM && 
-           p.pos.x + 20 > e.x && p.pos.x < e.x + e.w && 
-           p.pos.y + 80 <= e.y + 10 && p.pos.y + 80 >= e.y - 10 && p.vel.y >= 0) {
-           platformY = e.y;
-       }
-       if (e.type === EntityType.WIND_TUNNEL && e.data.active && checkOverlap({x: p.pos.x, y: p.pos.y, w: 40, h: 80}, e)) {
-           windForce += e.data.force;
-       }
-       // Sand Trap Logic
-       if (e.type === EntityType.SAND_TRAP && checkOverlap({x: p.pos.x + 10, y: p.pos.y + 60, w: 20, h: 20}, e)) {
-           inSandTrap = true;
-           if (Math.random() < 0.2 && Math.abs(p.vel.x) > 0.5) {
-               spawnParticles(p.pos.x + 20, p.pos.y + 80, '#333', 1);
-           }
-       }
-    });
-
-    if (s.isGusting) windForce += -1.5;
-
-    if (episode === 4 && s.keys['KeyE']) {
-      p.isShielding = true;
-      p.vel.x *= 0.7; // Slow down while shielding
-    } else {
-      p.isShielding = false;
-    }
-
-    const speedMod = 1 - (p.tasksCompleted * 0.15);
-    let moveS = PHYSICS.MOVE_SPEED * speedMod;
-    
-    // Sand Trap slows movement
-    if (inSandTrap) moveS *= 0.4;
-    
-    if (!s.dialogueActive) {
-      if (s.keys['ArrowRight']) { p.vel.x += moveS * 0.5; p.facingRight = true; }
-      else if (s.keys['ArrowLeft']) { p.vel.x -= moveS * 0.5; p.facingRight = false; }
-      else p.vel.x *= PHYSICS.FRICTION;
-    }
-    p.vel.x += windForce;
-    
-    const maxS = p.draggingItem || p.isShielding ? 2.5 : PHYSICS.MAX_SPEED;
-    p.vel.x = Math.max(-maxS, Math.min(maxS, p.vel.x));
-    
-    // Idle Timer Logic
-    if (Math.abs(p.vel.x) < 0.1 && p.grounded && !p.isSlashing && !p.isInteracting) {
-        p.idleTime += dt;
-    } else {
-        p.idleTime = 0;
-    }
-
-    // Movement Trail
-    const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
-    if (Math.abs(p.vel.x) > 4 && Math.random() < 0.3) {
-       spawnParticles(p.pos.x + 20, p.pos.y + 80, palette.player, 1);
-    }
-    
-    p.vel.y += PHYSICS.GRAVITY;
-    p.pos.x += p.vel.x;
-    p.pos.y += p.vel.y;
-
-    if (p.pos.y > platformY - 80) {
-      if (!s.lastGrounded) {
-        triggerJuice(Math.abs(p.vel.y) * 0.5);
-        spawnParticles(p.pos.x + 20, platformY, COLORS.GREY, 10);
-      }
-      p.pos.y = platformY - 80; p.vel.y = 0; p.grounded = true;
-      if (inSandTrap) p.pos.y += 10; // Sink into sand
-    } else p.grounded = false;
-    s.lastGrounded = p.grounded;
-
-    if (s.keys['Space'] && p.grounded) { p.vel.y = PHYSICS.JUMP_FORCE; p.grounded = false; }
-    if (s.keys['Space'] && !p.grounded) p.isSlashing = true;
-    if (p.pos.x < 0) p.pos.x = 0;
+    const s = stateRef.current; const p = s.player;
+    let wF = 0; let inS = false; let pY = WORLD.GROUND_Y;
+    s.entities.forEach(e => { if (e.type === EntityType.PLATFORM && p.pos.x + 20 > e.x && p.pos.x < e.x + e.w && p.pos.y + 80 <= e.y + 10 && p.pos.y + 80 >= e.y - 10 && p.vel.y >= 0) pY = e.y; if (e.type === EntityType.WIND_TUNNEL && e.data.active && checkOverlap({x: p.pos.x, y: p.pos.y, w: 40, h: 80}, e)) wF += e.data.force; if (e.type === EntityType.SAND_TRAP && checkOverlap({x: p.pos.x + 10, y: p.pos.y + 60, w: 20, h: 20}, e)) inS = true; });
+    if (s.isGusting) wF += -2.0; if (episode === 4 && s.keys['KeyE']) { p.isShielding = true; p.vel.x *= 0.6; } else p.isShielding = false;
+    const sM = 1 - (p.tasksCompleted * 0.15); let mS = PHYSICS.MOVE_SPEED * sM; if (inS) mS *= 0.35;
+    if (!s.dialogueActive) { if (s.keys['ArrowRight']) { p.vel.x += mS * 0.5; p.facingRight = true; } else if (s.keys['ArrowLeft']) { p.vel.x -= mS * 0.5; p.facingRight = false; } else p.vel.x *= PHYSICS.FRICTION; }
+    p.vel.x += wF; const maxS = p.draggingItem || p.isShielding ? 2.5 : PHYSICS.MAX_SPEED; p.vel.x = Math.max(-maxS, Math.min(maxS, p.vel.x));
+    p.idleTime = (Math.abs(p.vel.x) < 0.1 && p.grounded && !p.isSlashing && !p.isInteracting) ? p.idleTime + dt : 0;
+    if (Math.abs(p.vel.x) > 4 && Math.random() < 0.4) spawnParticles(p.pos.x + 20, p.pos.y + 80, [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1].player, 1);
+    p.vel.y += PHYSICS.GRAVITY; p.pos.x += p.vel.x; p.pos.y += p.vel.y;
+    if (p.pos.y > pY - 80) { if (!s.lastGrounded) { triggerJuice(Math.abs(p.vel.y) * 0.6); spawnParticles(p.pos.x + 20, pY, COLORS.WHITE, 12); } p.pos.y = pY - 80; p.vel.y = 0; p.grounded = true; if (inS) p.pos.y += 12; } else p.grounded = false;
+    s.lastGrounded = p.grounded; if (s.keys['Space'] && p.grounded) { p.vel.y = PHYSICS.JUMP_FORCE; p.grounded = false; } if (s.keys['Space'] && !p.grounded) p.isSlashing = true; if (p.pos.x < 0) p.pos.x = 0;
   };
 
   const drawBackground = (ctx: CanvasRenderingContext2D) => {
-    const s = stateRef.current;
-    const w = WORLD.VIEWPORT_WIDTH;
-    const h = WORLD.HEIGHT;
+    const s = stateRef.current; const w = WORLD.VIEWPORT_WIDTH; const h = WORLD.HEIGHT;
     s.bgLayers.forEach(l => {
-      ctx.fillStyle = l.color;
-      const xOffset = -(s.camera.x * l.speed) % w;
+      ctx.fillStyle = l.color; const xO = -(s.camera.x * l.speed) % w;
       for (let i = -1; i < 3; i++) {
-        const drawX = xOffset + (i * w);
-        ctx.fillRect(drawX, WORLD.GROUND_Y - l.h, w, l.h);
-        l.objects.forEach(obj => {
-          const driftY = obj.drift ? Math.sin(Date.now()/2000 * obj.drift) * 20 : 0;
-          const ox = drawX + obj.x;
-          const oy = WORLD.GROUND_Y - obj.h - obj.y + driftY;
-          if (obj.type === 'rect') ctx.fillRect(ox, oy, obj.w, obj.h);
-          else if (obj.type === 'arch') { ctx.fillRect(ox, oy, obj.w, obj.h); ctx.clearRect(ox + 20, oy + 40, obj.w - 40, obj.h); }
-          else if (obj.type === 'pillar') { ctx.fillRect(ox, oy, obj.w, obj.h); ctx.fillRect(ox - 15, oy, obj.w + 30, 20); }
-          else if (obj.type === 'monolith') { ctx.beginPath(); ctx.moveTo(ox, oy + obj.h); ctx.lineTo(ox + obj.w / 2, oy); ctx.lineTo(ox + obj.w, oy + obj.h); ctx.fill(); }
+        const dX = xO + (i * w); ctx.fillRect(dX, WORLD.GROUND_Y - l.h, w, l.h);
+        l.objects.forEach(o => {
+          const dY = o.drift ? Math.sin(Date.now()/2000 * o.drift) * 20 : 0; const ox = dX + o.x; const oy = WORLD.GROUND_Y - o.h - o.y + dY;
+          ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(0,0,0,0.5)';
+          if (o.type === 'rect') ctx.fillRect(ox, oy, o.w, o.h);
+          else if (o.type === 'arch') { ctx.fillRect(ox, oy, o.w, o.h); ctx.clearRect(ox + 20, oy + 40, o.w - 40, o.h); ctx.strokeStyle = o.color || 'white'; ctx.strokeRect(ox, oy, o.w, o.h); }
+          else if (o.type === 'pillar') { ctx.fillRect(ox, oy, o.w, o.h); ctx.fillRect(ox - 20, oy, o.w + 40, 25); ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(ox + o.w/2 - 2, oy, 4, o.h); }
+          else if (o.type === 'monolith') { ctx.beginPath(); ctx.moveTo(ox, oy + o.h); ctx.lineTo(ox + o.w / 2, oy); ctx.lineTo(ox + o.w, oy + o.h); ctx.fill(); ctx.strokeStyle = 'white'; ctx.stroke(); }
+          ctx.restore();
         });
       }
     });
-
-    s.envParticles.forEach(p => {
-      ctx.fillStyle = p.color;
-      ctx.fillRect(p.x, p.y, p.size, p.size);
-    });
+    s.envParticles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); });
   };
 
   const drawPlayer = (ctx: CanvasRenderingContext2D) => {
-    const p = stateRef.current.player;
-    // Base animation
-    let squash = 1 + (Math.abs(p.vel.y) * 0.03);
-    let stretch = 1 / squash;
-    
-    // Idle Animations
+    const p = stateRef.current.player; let sq = 1 + (Math.abs(p.vel.y) * 0.04); let st = 1 / sq;
     if (p.idleTime > 0.5) {
         const t = Date.now();
-        if (episode === 1) { 
-            // Exhausted breathing
-            stretch = 1 + Math.sin(t / 400) * 0.05;
-            squash = 1 / stretch;
-        } else if (episode === 2) {
-            // Shivering
-            ctx.translate(Math.random() * 2 - 1, 0);
-        } else if (episode === 3) {
-            // Sickness/Hunching
-            if (Math.random() < 0.02) squash = 0.8; // Random hunch
-            if (Math.random() < 0.05) ctx.filter = 'hue-rotate(90deg)'; // Sickly flash
-        } else if (episode === 4) {
-            // Glitching/Transforming
-            if (Math.random() < 0.1) {
-                ctx.translate(Math.random() * 4 - 2, 0);
-                stretch = 1.2;
-            }
-            // Shadow Wing
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.beginPath(); ctx.moveTo(0, -60); ctx.lineTo(-40, -100); ctx.lineTo(-10, -50); ctx.fill();
-        }
+        if (episode === 1) st = 1 + Math.sin(t / 400) * 0.08;
+        else if (episode === 2) ctx.translate(Math.random() * 4 - 2, 0);
+        else if (episode === 3) { if (Math.random() < 0.02) sq = 0.7; if (Math.random() < 0.1) ctx.filter = 'hue-rotate(180deg) brightness(1.5)'; }
+        else if (episode === 4) { if (Math.random() < 0.2) { ctx.translate(Math.random() * 8 - 4, 0); st = 1.4; } ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.moveTo(0, -60); ctx.lineTo(-60, -120); ctx.lineTo(-20, -60); ctx.fill(); }
     }
-
-    const burdenAlpha = Math.min(0.9, p.tasksCompleted * 0.25);
-    const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
-
-    ctx.save(); ctx.translate(p.pos.x + 20, p.pos.y + 80); if (!p.facingRight) ctx.scale(-1, 1);
-    ctx.scale(stretch, squash);
-    
-    // Cloak/Torso with depth
-    ctx.fillStyle = palette.player; 
-    ctx.beginPath();
-    ctx.roundRect(-18, -80, 36, 50, 8);
-    ctx.fill();
-    // Shading on cloak
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(8, -80, 10, 50);
-
-    // Mask/Head
-    ctx.fillStyle = COLORS.WHITE;
-    ctx.beginPath();
-    ctx.roundRect(-14, -100, 28, 28, 4);
-    ctx.fill();
-    // Eyes
-    ctx.fillStyle = COLORS.BLACK;
-    ctx.fillRect(-8, -88, 4, 4);
-    ctx.fillRect(4, -88, 4, 4);
-
-    // Legs with joints
-    ctx.fillStyle = palette.player;
-    ctx.fillRect(-12, -35, 10, 35);  
-    ctx.fillRect(2, -35, 10, 35);
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
-    ctx.fillRect(-12, -15, 10, 5);
-    ctx.fillRect(2, -15, 10, 5);
-
-    if (p.isShielding) {
-       ctx.strokeStyle = COLORS.WHITE; ctx.lineWidth = 4; ctx.strokeRect(-28, -110, 56, 115);
-       ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(-28, -110, 56, 115);
-       ctx.shadowBlur = 10; ctx.shadowColor = COLORS.WHITE;
-    }
-    
-    ctx.fillStyle = `rgba(0,0,0,${burdenAlpha})`; 
-    ctx.fillRect(-18, -80, 36, 80);
-    
-    // Scythe/Arm or Holding Item
+    const bA = Math.min(0.9, p.tasksCompleted * 0.22); const pal = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
+    ctx.save(); ctx.translate(p.pos.x + 20, p.pos.y + 80); if (!p.facingRight) ctx.scale(-1, 1); ctx.scale(st, sq);
+    // Detailed Cloak
+    ctx.fillStyle = pal.player; ctx.beginPath(); ctx.roundRect(-22, -80, 44, 60, 12); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(10, -80, 12, 60);
+    // Detailed Mask
+    ctx.fillStyle = COLORS.WHITE; ctx.beginPath(); ctx.roundRect(-16, -105, 32, 32, 6); ctx.fill();
+    ctx.strokeStyle = pal.player; ctx.lineWidth = 2; ctx.stroke();
+    // Glowing Eyes
+    const blink = Math.sin(Date.now() / 300) > 0.95 ? 0.1 : 1;
+    ctx.fillStyle = COLORS.BLACK; ctx.fillRect(-10, -92, 6, 6 * blink); ctx.fillRect(4, -92, 6, 6 * blink);
+    // Legs
+    ctx.fillStyle = pal.player; ctx.fillRect(-14, -30, 12, 30); ctx.fillRect(2, -30, 12, 30);
+    ctx.fillStyle = 'black'; ctx.fillRect(-14, -5, 12, 6); ctx.fillRect(2, -5, 12, 6);
+    if (p.isShielding) { ctx.strokeStyle = 'white'; ctx.lineWidth = 6; ctx.shadowBlur = 20; ctx.shadowColor = 'white'; ctx.strokeRect(-32, -115, 64, 120); ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(-32, -115, 64, 120); }
+    ctx.fillStyle = `rgba(0,0,0,${bA})`; ctx.fillRect(-22, -80, 44, 80);
+    // Ornate Scythe
     if (p.carriedItem) {
-        // Draw held item above head
-        if (p.carriedItem === EntityType.ITEM_GEAR) {
-            ctx.fillStyle = '#8B4513'; ctx.fillRect(-10, -130, 20, 20);
-        } else if (p.carriedItem === EntityType.ITEM_KEY) {
-            ctx.fillStyle = '#00FFFF'; ctx.fillRect(-5, -130, 10, 20);
-        } else if (p.carriedItem === EntityType.ITEM_INGREDIENT) {
-            ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(0, -120, 10, 0, Math.PI*2); ctx.fill();
-        } else if (p.carriedItem === EntityType.ITEM_HEART) {
-            ctx.fillStyle = '#DC143C'; ctx.beginPath(); ctx.arc(0, -120, 12, 0, Math.PI*2); ctx.fill();
-        }
-        // Hands up
-        ctx.fillStyle = palette.player; ctx.fillRect(-20, -90, 10, 30); ctx.fillRect(10, -90, 10, 30);
+        ctx.fillStyle = COLORS.GOLD; ctx.shadowBlur = 10; ctx.shadowColor = COLORS.GOLD;
+        if (p.carriedItem === EntityType.ITEM_GEAR) { ctx.beginPath(); ctx.arc(0, -130, 15, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
+        else if (p.carriedItem === EntityType.ITEM_KEY) { ctx.fillRect(-8, -140, 16, 30); ctx.fillRect(-15, -120, 30, 8); }
+        else { ctx.beginPath(); ctx.arc(0, -130, 12, 0, Math.PI*2); ctx.fill(); }
+        ctx.fillStyle = pal.player; ctx.fillRect(-24, -95, 12, 40); ctx.fillRect(12, -95, 12, 40);
     } else {
-        // Normal Scythe
-        ctx.fillStyle = COLORS.ORANGE; 
-        ctx.save(); ctx.translate(12, -65);
-        if (p.isSlashing) { ctx.rotate(Math.sin(Date.now()/30) * 2.8); ctx.fillRect(-10, 0, 20, 60); }
-        else { ctx.rotate(0.4 + Math.sin(Date.now()/400) * 0.15); ctx.fillRect(-8, 0, 16, 45); }
+        ctx.fillStyle = COLORS.ORANGE; ctx.save(); ctx.translate(14, -60);
+        if (p.isSlashing) { ctx.rotate(Math.sin(Date.now()/25) * 3); ctx.shadowBlur = 20; ctx.shadowColor = COLORS.ORANGE; ctx.fillRect(-12, 0, 24, 80); ctx.fillStyle = 'white'; ctx.fillRect(-4, 10, 8, 60); }
+        else { ctx.rotate(0.5 + Math.sin(Date.now()/400) * 0.2); ctx.fillRect(-10, 0, 20, 55); }
         ctx.restore();
     }
-    
-    ctx.restore();
-    // Reset filter from "sickness"
-    ctx.filter = 'none';
+    ctx.restore(); ctx.filter = 'none';
   };
 
-  const drawBoss = (ctx: CanvasRenderingContext2D, x: number, y: number, facingRight: boolean, stunTimer: number) => {
-    const bob = Math.sin(Date.now() / 250) * 15;
-    ctx.save(); ctx.translate(x + 50, y + 240 + bob); if (!facingRight) ctx.scale(-1, 1);
-    
-    if (stunTimer > 0) ctx.globalAlpha = 0.5 + Math.sin(Date.now()/50)*0.5;
-
-    // Body (Black and taller, more defined)
-    ctx.fillStyle = COLORS.BLACK;
-    ctx.beginPath();
-    ctx.moveTo(-100, 0);
-    ctx.quadraticCurveTo(-110, -180, 0, -260); // Curved back/neck
-    ctx.quadraticCurveTo(110, -180, 100, 0);
-    ctx.fill();
-
-    // Mask/Face
-    ctx.fillStyle = COLORS.WHITE;
-    ctx.beginPath();
-    ctx.roundRect(-20, -240, 40, 50, 10);
-    ctx.fill();
-    
-    // Orange eye
-    ctx.fillStyle = COLORS.ORANGE; ctx.beginPath(); ctx.arc(0, -215, 12, 0, Math.PI*2); ctx.fill(); 
-    
-    // Shimmering Wings animation
-    const wingAngle = Math.sin(Date.now() / 150) * 0.4;
-    const shimmer = 0.8 + Math.sin(Date.now() / 100) * 0.2;
-    ctx.save();
-    ctx.globalAlpha *= shimmer;
-    ctx.fillStyle = COLORS.BLACK;
-    // L Wing
-    ctx.save(); ctx.translate(-40, -180); ctx.rotate(wingAngle); 
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-150, -20); ctx.lineTo(-140, 40); ctx.closePath(); ctx.fill();
-    ctx.restore();
-    // R Wing
-    ctx.save(); ctx.translate(60, -180); ctx.rotate(-wingAngle); 
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(150, -20); ctx.lineTo(140, 40); ctx.closePath(); ctx.fill();
-    ctx.restore();
-    ctx.restore();
-
-    // Orange feather-arm (scythe) - more like a blade
-    ctx.lineWidth = 35; ctx.strokeStyle = COLORS.ORANGE; 
-    ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(70,-180); 
-    ctx.quadraticCurveTo(150, -150, 180, 140); 
-    ctx.stroke();
-    // Blade edge
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(75,-175); ctx.quadraticCurveTo(155, -145, 185, 135); ctx.stroke();
-
+  const drawBoss = (ctx: CanvasRenderingContext2D, x: number, y: number, facingRight: boolean, stun: number) => {
+    const b = Math.sin(Date.now() / 200) * 20;
+    ctx.save(); ctx.translate(x + 60, y + 260 + b); if (!facingRight) ctx.scale(-1, 1);
+    if (stun > 0) ctx.globalAlpha = 0.4 + Math.sin(Date.now()/40)*0.4;
+    // Ornate Boss Body
+    ctx.fillStyle = COLORS.BLACK; ctx.beginPath(); ctx.moveTo(-110, 0); ctx.quadraticCurveTo(-130, -200, 0, -280); ctx.quadraticCurveTo(130, -200, 110, 0); ctx.fill();
+    ctx.strokeStyle = COLORS.ORANGE; ctx.lineWidth = 4; ctx.stroke();
+    // Intricate Mask
+    ctx.fillStyle = COLORS.WHITE; ctx.beginPath(); ctx.roundRect(-25, -260, 50, 60, 12); ctx.fill();
+    ctx.stroke(); ctx.fillStyle = COLORS.ORANGE; ctx.shadowBlur = 25; ctx.shadowColor = COLORS.ORANGE; ctx.beginPath(); ctx.arc(0, -230, 15, 0, Math.PI*2); ctx.fill();
+    // Massive Animated Wings
+    const wA = Math.sin(Date.now() / 120) * 0.5;
+    ctx.fillStyle = 'rgba(20,20,20,0.9)';
+    for(let i of [-1, 1]) { ctx.save(); ctx.translate(i*50, -200); ctx.rotate(i*wA); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(i*200, -50); ctx.lineTo(i*180, 80); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    // Executioner Blade
+    ctx.lineWidth = 40; ctx.strokeStyle = COLORS.ORANGE; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(80,-200); ctx.quadraticCurveTo(180, -150, 210, 180); ctx.stroke();
+    ctx.strokeStyle = 'white'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(85,-195); ctx.quadraticCurveTo(185, -145, 215, 175); ctx.stroke();
     ctx.restore();
   };
 
   const draw = () => {
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-    const s = stateRef.current;
-    const palette = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
-    ctx.fillStyle = palette.bg; ctx.fillRect(0, 0, 800, 600);
-    drawBackground(ctx);
-    
-    // Low Health Vignette
-    if (s.player.hp < 2) {
-        const pulse = (Math.sin(Date.now() / 200) + 1) * 0.1;
-        ctx.fillStyle = `rgba(255, 0, 0, ${pulse})`;
-        ctx.fillRect(0, 0, 800, 600);
-    }
-    
-    // Draw Camera Space Entities
-    ctx.save();
-    const sx = (Math.random() - 0.5) * s.shake;
-    const sy = (Math.random() - 0.5) * s.shake;
-    ctx.translate(-s.camera.x + sx, sy);
-    ctx.fillStyle = '#000'; ctx.fillRect(s.camera.x - 500, WORLD.GROUND_Y, 2000, 100);
-
+    const c = canvasRef.current; if (!c) return; const ctx = c.getContext('2d')!; const s = stateRef.current;
+    const pal = [COLORS.EPISODE_1, COLORS.EPISODE_2, COLORS.EPISODE_3, COLORS.EPISODE_4][episode - 1];
+    ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, 800, 600); drawBackground(ctx);
+    if (s.player.hp < 2) { ctx.fillStyle = `rgba(255, 0, 0, ${(Math.sin(Date.now() / 150) + 1) * 0.15})`; ctx.fillRect(0, 0, 800, 600); }
+    ctx.save(); const sx = (Math.random() - 0.5) * s.shake; const sy = (Math.random() - 0.5) * s.shake;
+    ctx.translate(-s.camera.x + sx, sy); ctx.fillStyle = '#111'; ctx.fillRect(s.camera.x - 500, WORLD.GROUND_Y, 2000, 100);
     s.entities.forEach(ent => {
-      if (!ent.visible) return;
+      if (!ent.visible) return; ctx.save();
       if (ent.type === EntityType.PILLAR) {
-        ctx.save(); ctx.translate(ent.x + 20, ent.y + ent.h); ctx.rotate(ent.data.tilt * Math.PI / 180);
-        ctx.fillStyle = '#3A3F4B'; ctx.fillRect(-20, -ent.h, 40, ent.h); 
-        // Brick details
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        for(let j=0; j<ent.h; j+=30) ctx.fillRect(-15, -j-5, 10, 10);
-        ctx.fillStyle = '#1C1E26'; ctx.fillRect(-30, -ent.h - 5, 60, 20);
-        ctx.restore();
+        ctx.translate(ent.x + 25, ent.y + ent.h); ctx.rotate(ent.data.tilt * Math.PI / 180);
+        ctx.fillStyle = '#2C3E50'; ctx.fillRect(-25, -ent.h, 50, ent.h); ctx.strokeStyle = ent.interacted ? COLORS.GOLD : '#1A252F'; ctx.lineWidth = 4; ctx.strokeRect(-25, -ent.h, 50, ent.h);
+        if (ent.interacted) { ctx.shadowBlur = 15; ctx.shadowColor = COLORS.GOLD; ctx.fillStyle = COLORS.GOLD; ctx.fillRect(-15, -ent.h + 20, 30, 10); }
       } else if (ent.type === EntityType.DOOR) {
         ctx.fillStyle = '#000'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h);
-        // Arch detail
-        ctx.strokeStyle = COLORS.ORANGE; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.arc(ent.x + ent.w/2, ent.y + ent.h/2, 40, 0, Math.PI, true); ctx.stroke();
-        if (Math.abs(s.player.pos.x - ent.x) < 300) { 
-           ctx.strokeStyle = COLORS.ORANGE; ctx.lineWidth = 8; ctx.strokeRect(ent.x - 12, ent.y - 12, ent.w + 24, ent.h + 24); 
-        }
-      } else if (ent.type === EntityType.PEDESTAL) { 
-        ctx.fillStyle = '#0a0a0a'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h); 
-        ctx.fillStyle = '#111'; ctx.fillRect(ent.x + 10, ent.y - 10, ent.w - 20, 10);
-      } else if (ent.type === EntityType.MOUND) { 
-        ctx.fillStyle = '#444'; ctx.beginPath(); ctx.ellipse(ent.x + ent.w/2, ent.y + ent.h, ent.w/2, ent.h, 0, Math.PI, 0); ctx.fill();
-        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(ent.x + ent.w/2, ent.y + ent.h, ent.w/4, ent.h/2, 0, Math.PI, 0); ctx.fill();
-      } else if (ent.type === EntityType.DRAGGABLE_STONE) { 
-        ctx.fillStyle = '#4B3621'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h); 
-        ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 4; ctx.strokeRect(ent.x+10, ent.y+10, ent.w-20, ent.h-20);
+        ctx.strokeStyle = COLORS.GOLD; ctx.lineWidth = 8; ctx.strokeRect(ent.x, ent.y, ent.w, ent.h);
+        ctx.beginPath(); ctx.arc(ent.x + ent.w/2, ent.y + ent.h/3, 50, 0, Math.PI, true); ctx.stroke();
+        if (Math.abs(s.player.pos.x - ent.x) < 300) { ctx.shadowBlur = 30; ctx.shadowColor = COLORS.ORANGE; ctx.strokeRect(ent.x - 10, ent.y - 10, ent.w + 20, ent.h + 20); }
+      } else if (ent.type === EntityType.MOUND) {
+        const grd = ctx.createRadialGradient(ent.x + ent.w/2, ent.y + ent.h, 10, ent.x + ent.w/2, ent.y + ent.h, ent.w);
+        grd.addColorStop(0, '#5D4037'); grd.addColorStop(1, '#3E2723'); ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.ellipse(ent.x + ent.w/2, ent.y + ent.h, ent.w/2, ent.h, 0, Math.PI, 0); ctx.fill();
+        ctx.strokeStyle = '#21110a'; ctx.lineWidth = 3; ctx.stroke();
+      } else if (ent.type === EntityType.DRAGGABLE_STONE) {
+        ctx.fillStyle = '#34495E'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h);
+        ctx.strokeStyle = '#212F3C'; ctx.lineWidth = 6; ctx.strokeRect(ent.x+12, ent.y+12, ent.w-24, ent.h-24);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(ent.x + 20, ent.y + 20, 10, 10);
       } else if (ent.type === EntityType.SAND_TRAP) {
-        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(ent.x, ent.y + 5, ent.w, ent.h);
-        // Quicksand particles
-        if (Math.random() < 0.1) {
-            ctx.fillStyle = '#555'; ctx.fillRect(ent.x + Math.random() * ent.w, ent.y + Math.random() * 10, 3, 3);
-        }
-      } else if (ent.type === EntityType.OFFERING_BOWL) { 
-        ctx.fillStyle = '#111'; 
-        ctx.beginPath(); ctx.moveTo(ent.x, ent.y); ctx.lineTo(ent.x + ent.w, ent.y); ctx.lineTo(ent.x + ent.w - 20, ent.y + ent.h); ctx.lineTo(ent.x + 20, ent.y + ent.h); ctx.closePath(); ctx.fill();
-        if (ent.data.filled) { ctx.fillStyle = COLORS.ORANGE; ctx.fillRect(ent.x + 10, ent.y - 25, ent.w - 20, 25); ctx.shadowBlur = 10; ctx.shadowColor = COLORS.ORANGE; } 
-      } else if (ent.type === EntityType.BOSS) { 
-        drawBoss(ctx, ent.x, ent.y, s.player.pos.x > ent.x, ent.data.stunTimer); 
-      } else if (ent.type === EntityType.PROJECTILE) { 
-        ctx.fillStyle = COLORS.WHITE; ctx.beginPath(); ctx.roundRect(ent.x, ent.y, ent.w, ent.h, 4); ctx.fill();
-      } else if (ent.type === EntityType.PLATFORM) {
-        ctx.fillStyle = '#222'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h);
-      } else if (ent.type === EntityType.ITEM_GEAR) {
-        ctx.fillStyle = '#8B4513'; ctx.beginPath(); ctx.arc(ent.x + 20, ent.y + 20, 15, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(ent.x + 20, ent.y + 20, 5, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#654321'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(ent.x+20, ent.y+20, 18, 0, Math.PI*2); ctx.stroke();
-      } else if (ent.type === EntityType.ITEM_KEY) {
-         ctx.fillStyle = '#00FFFF'; ctx.fillRect(ent.x+15, ent.y+5, 10, 30); ctx.fillRect(ent.x+15, ent.y+25, 20, 10);
-      } else if (ent.type === EntityType.MACHINE_TURBINE) {
-        ctx.fillStyle = '#555'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h);
-        // Blades
-        ctx.save(); ctx.translate(ent.x + 50, ent.y + 50); 
-        if (!ent.data.fixed) ctx.rotate(0.2);
-        else ctx.rotate(Date.now() / 100);
-        ctx.fillStyle = '#888'; ctx.fillRect(-80, -10, 160, 20); ctx.fillRect(-10, -80, 20, 160);
-        ctx.restore();
+        ctx.fillStyle = '#21110a'; ctx.fillRect(ent.x, ent.y + 10, ent.w, ent.h);
+        for(let j=0; j<5; j++) { ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(ent.x + Math.random()*ent.w, ent.y + Math.random()*20, 4, 4); }
+      } else if (ent.type === EntityType.BOSS) drawBoss(ctx, ent.x, ent.y, s.player.pos.x > ent.x, ent.data.stunTimer);
+      else if (ent.type === EntityType.PROJECTILE) { ctx.fillStyle = 'white'; ctx.shadowBlur = 15; ctx.shadowColor = 'white'; ctx.beginPath(); ctx.roundRect(ent.x, ent.y, ent.w, ent.h, 5); ctx.fill(); }
+      else if (ent.type === EntityType.PLATFORM) { ctx.fillStyle = '#1B2631'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h); ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.strokeRect(ent.x, ent.y, ent.w, ent.h); }
+      else if (ent.type === EntityType.ITEM_GEAR) { ctx.fillStyle = '#8B4513'; ctx.beginPath(); ctx.arc(ent.x + 25, ent.y + 25, 20, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = 'black'; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = 'silver'; ctx.beginPath(); ctx.arc(ent.x+25, ent.y+25, 6, 0, Math.PI*2); ctx.fill(); }
+      else if (ent.type === EntityType.ITEM_KEY) { ctx.fillStyle = '#00FFFF'; ctx.shadowBlur = 15; ctx.shadowColor = '#00FFFF'; ctx.fillRect(ent.x+20, ent.y+5, 12, 40); ctx.fillRect(ent.x+20, ent.y+35, 25, 12); }
+      else if (ent.type === EntityType.MACHINE_TURBINE) {
+        ctx.fillStyle = '#2C3E50'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h); ctx.save(); ctx.translate(ent.x + 60, ent.y + 60);
+        ctx.rotate(!ent.data.fixed ? 0.3 : Date.now() / 150); ctx.fillStyle = '#7F8C8D'; ctx.fillRect(-100, -12, 200, 24); ctx.fillRect(-12, -100, 24, 200); ctx.restore();
       } else if (ent.type === EntityType.ALCHEMY_CAULDRON) {
-        ctx.fillStyle = '#222'; 
-        ctx.beginPath(); ctx.arc(ent.x+60, ent.y+60, 50, 0, Math.PI, false); ctx.fill();
-        ctx.fillRect(ent.x + 10, ent.y, 100, 60);
-        // Liquid
-        const fill = ent.data.ingredients / 3;
-        if (fill > 0) {
-            ctx.fillStyle = ent.data.complete ? '#DC143C' : '#32CD32';
-            ctx.fillRect(ent.x + 20, ent.y + 60 - (50 * fill), 80, 50 * fill);
-        }
-      } else if (ent.type === EntityType.ITEM_INGREDIENT) {
-        ctx.fillStyle = ent.data.color || '#fff';
-        ctx.beginPath(); ctx.arc(ent.x+20, ent.y+20, 15, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
-      } else if (ent.type === EntityType.ITEM_HEART) {
-        ctx.fillStyle = '#DC143C';
-        ctx.beginPath(); ctx.arc(ent.x+20, ent.y+20, 15, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 15; ctx.shadowColor = '#DC143C';
-      }
+        ctx.fillStyle = '#1A1A1A'; ctx.beginPath(); ctx.arc(ent.x+70, ent.y+70, 65, 0, Math.PI, false); ctx.fill(); ctx.fillRect(ent.x + 10, ent.y, 120, 70);
+        const f = ent.data.ingredients / 3; if (f > 0) { ctx.fillStyle = ent.data.complete ? '#C0392B' : '#27AE60'; ctx.shadowBlur = 20; ctx.shadowColor = ctx.fillStyle; ctx.fillRect(ent.x + 20, ent.y + 70 - (60 * f), 100, 60 * f); }
+      } else if (ent.type === EntityType.ITEM_INGREDIENT) { ctx.fillStyle = ent.data.color || '#fff'; ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle; ctx.beginPath(); ctx.arc(ent.x+25, ent.y+25, 20, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
+      else if (ent.type === EntityType.ITEM_HEART) { ctx.fillStyle = '#E74C3C'; ctx.shadowBlur = 30; ctx.shadowColor = '#E74C3C'; ctx.beginPath(); ctx.arc(ent.x+30, ent.y+30, 25, 0, Math.PI*2); ctx.fill(); }
+      else if (ent.type === EntityType.PEDESTAL) { ctx.fillStyle = '#111'; ctx.fillRect(ent.x, ent.y, ent.w, ent.h); ctx.fillStyle = COLORS.GOLD; ctx.fillRect(ent.x + 10, ent.y - 12, ent.w - 20, 12); }
+      ctx.restore();
     });
-
     drawPlayer(ctx);
-    for (let i = s.particles.length - 1; i >= 0; i--) { const p = s.particles[i]; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 6, 6); }
-    ctx.restore(); // END CAMERA TRANSFORM
-
-    // --- SCREEN SPACE UI LAYER ---
-    // Draw Hints (Centered Screen Space)
-    ctx.save();
-    ctx.font = '24px "Press Start 2P"';
-    ctx.textAlign = 'center';
-    
-    // Find the closest active hint to display
-    let activeHint = null;
-    let maxAlpha = 0;
-
-    s.hints.forEach(hint => {
-        const dist = Math.abs((s.player.pos.x + 20) - hint.x);
-        if (dist < hint.range) {
-            const alpha = Math.max(0, 1 - (dist / hint.range));
-            if (alpha > maxAlpha) {
-               maxAlpha = alpha;
-               activeHint = hint.text;
-            }
-        }
-    });
-
-    if (activeHint && maxAlpha > 0) {
-       // Draw centered in screen
-       const centerX = 800 / 2;
-       const centerY = 150; // Top third of screen
-       
-       ctx.fillStyle = `rgba(0, 0, 0, ${maxAlpha * 0.8})`;
-       ctx.fillText(activeHint, centerX + 2, centerY + 2); // Shadow
-       ctx.fillStyle = `rgba(255, 255, 255, ${maxAlpha})`;
-       ctx.fillText(activeHint, centerX, centerY);
-    }
+    for (let i = s.particles.length - 1; i >= 0; i--) { const p = s.particles[i]; ctx.fillStyle = p.color; ctx.save(); ctx.shadowBlur = 5; ctx.shadowColor = p.color; ctx.fillRect(p.x, p.y, 7, 7); ctx.restore(); }
     ctx.restore();
-
-    // Episode 4 HUD
+    // Hint System (Centered)
+    ctx.save(); ctx.font = 'bold 28px "Press Start 2P"'; ctx.textAlign = 'center';
+    let aH = null; let mA = 0; s.hints.forEach(h => { const d = Math.abs((s.player.pos.x + 20) - h.x); if (d < h.range) { const a = 1 - (d / h.range); if (a > mA) { mA = a; aH = h.text; } } });
+    if (aH && mA > 0) { const cX = 800 / 2; const cY = 160; ctx.fillStyle = `rgba(0, 0, 0, ${mA * 0.9})`; ctx.fillText(aH, cX + 4, cY + 4); ctx.fillStyle = `rgba(255, 255, 255, ${mA})`; ctx.fillText(aH, cX, cY); } ctx.restore();
     if (episode === 4) {
       const boss = s.entities.find(e => e.type === EntityType.BOSS);
       if (boss) {
-        // Boss Health Bar
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(150, 40, 500, 25);
-        const bPct = Math.max(0, boss.data.hp / boss.data.maxHp);
-        ctx.fillStyle = COLORS.ORANGE; ctx.fillRect(155, 45, 490 * bPct, 15);
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(150, 40, 500, 25);
-        ctx.fillStyle = '#000'; ctx.font = '10px monospace'; ctx.fillText("BIRD OF THE CYCLE", 150, 35);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(100, 30, 600, 35);
+        const bP = Math.max(0, boss.data.hp / boss.data.maxHp);
+        ctx.fillStyle = '#C0392B'; ctx.shadowBlur = 10; ctx.shadowColor = '#C0392B'; ctx.fillRect(105, 35, 590 * bP, 25);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(100, 30, 600, 35);
+        ctx.fillStyle = 'white'; ctx.font = 'bold 12px monospace'; ctx.fillText("BIRD OF THE RECURRENCE", 100, 25);
       }
-      // Player Health Bar
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(40, 40, 100, 20);
-      const pPct = s.player.hp / s.player.maxHp;
-      ctx.fillStyle = palette.player; ctx.fillRect(45, 45, 90 * pPct, 10);
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(40, 40, 100, 20);
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(40, 40, 150, 30);
+      const pP = s.player.hp / s.player.maxHp; ctx.fillStyle = pal.player; ctx.fillRect(45, 45, 140 * pP, 20); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(40, 40, 150, 30);
     }
   };
 
-  const loop = (time: number) => {
-    let dt = (time - stateRef.current.lastTime) / 1000; stateRef.current.lastTime = time;
-    if (dt > 0.1) dt = 0.016;
+  const loop = (t: number) => {
+    let dt = (t - stateRef.current.lastTime) / 1000; stateRef.current.lastTime = t; if (dt > 0.1) dt = 0.016;
     if (stateRef.current.hitStop > 0) { stateRef.current.hitStop -= dt; dt = 0; }
-    stateRef.current.shake *= JUICE.SHAKE_DECAY;
-    if (stateRef.current.shake < 0.1) stateRef.current.shake = 0;
+    stateRef.current.shake *= JUICE.SHAKE_DECAY; if (stateRef.current.shake < 0.1) stateRef.current.shake = 0;
     for (let i = stateRef.current.particles.length - 1; i >= 0; i--) { const p = stateRef.current.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt; if (p.life <= 0) stateRef.current.particles.splice(i, 1); }
     if (gameState === GameState.PLAYING && dt > 0) {
-      updatePhysics(dt); updateEntities(dt);
-      updateEnvironment(dt);
+      updatePhysics(dt); updateEntities(dt); updateEnvironment(dt);
       if (episode === 4) updateBoss(dt);
       const tx = episode === 4 ? 0 : stateRef.current.player.pos.x - 400;
-      stateRef.current.camera.x += (tx - stateRef.current.camera.x) * 0.14;
+      stateRef.current.camera.x += (tx - stateRef.current.camera.x) * 0.15;
       if (stateRef.current.camera.x < 0) stateRef.current.camera.x = 0;
     }
     draw(); requestRef.current = requestAnimationFrame(loop);
@@ -1068,7 +513,7 @@ export const Game: React.FC<GameProps> = ({
 
   return (
     <div className="relative w-full h-full flex justify-center items-center">
-      <canvas ref={canvasRef} width={800} height={600} className="border-4 border-black shadow-2xl bg-black" style={{ width: '100%', maxWidth: '800px', height: 'auto', aspectRatio: '4/3' }} />
+      <canvas ref={canvasRef} width={800} height={600} className="border-8 border-white shadow-[0_0_50px_rgba(255,255,255,0.3)] bg-black" style={{ width: '100%', maxWidth: '800px', height: 'auto', aspectRatio: '4/3' }} />
     </div>
   );
 };

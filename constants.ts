@@ -1,17 +1,18 @@
 
 export const COLORS = {
-  BLUE: '#2E4583',
+  BLUE: '#3498DB',
   WHITE: '#FFFFFF',
-  ORANGE: '#FF4500',
-  GREY: '#A9A9A9',
-  BLACK: '#000000',
-  HONEY_YELLOW: '#FFC30B',
-  // Episode Palettes
-  EPISODE_1: { bg: '#9FAF90', player: '#34113F' },
-  EPISODE_2: { bg: '#eff7cf', player: '#bad9b5' },
-  EPISODE_3: { bg: '#564138', player: '#ff8811' },
-  EPISODE_4: { bg: '#FFC30B', player: '#225560' },
-  BOSS: '#b86f52'
+  ORANGE: '#FF5733',
+  GREY: '#BDC3C7',
+  BLACK: '#1A1A1A',
+  HONEY_YELLOW: '#F1C40F',
+  GOLD: '#FFD700',
+  // Brighter Episode Palettes
+  EPISODE_1: { bg: '#F4D03F', player: '#5B2C6F' }, // Golden Sands / Royal Purple
+  EPISODE_2: { bg: '#48C9B0', player: '#1B4F72' }, // Turquoise Coast / Deep Sea
+  EPISODE_3: { bg: '#E67E22', player: '#641E16' }, // Burning Embers / Blood Maroon
+  EPISODE_4: { bg: '#85C1E9', player: '#1B2631' }, // High Heavens / Void Blue
+  BOSS: '#C0392B'
 };
 
 export const PHYSICS = {
@@ -35,5 +36,5 @@ export const JUICE = {
 
 export const TASKS = {
   TOTAL: 5,
-  SPEED_PENALTY: 0.12, // Cumulative penalty per burden carried
+  SPEED_PENALTY: 0.12, 
 };
